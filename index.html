@@ -113,9 +113,9 @@
           <span id="headerClusterName" class="font-semibold text-[#6b1d7a] truncate max-w-[75px]">—</span>
         </div>
 
-        <button id="openServerModalBtn" type="button" class="w-8 h-8 rounded-full border border-[#e4e1f0] bg-[#f9f8fc] flex items-center justify-center shrink-0" title="Google Sheet Server">
+        <button id="openServerModalBtn" type="button" class="hidden" aria-hidden="true">
           <span id="syncStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-          <span id="syncStatusText" class="sr-only">Google Sheet Server</span>
+          <span id="syncStatusText" class="sr-only">Live Synced</span>
         </button>
       </div>
     </div>
@@ -129,17 +129,7 @@
     <!-- VIEW 1: WELCOME SCREEN (Login for BDM + Direct Download Report Without Login) -->
     <section id="viewProfileGate" class="w-full max-w-md mx-auto pt-4 space-y-4">
       <div class="buddy-card p-6 sm:p-8 relative">
-        <!-- Subtle Top-Right Sheet Server Setup Icon on Welcome Screen -->
-        <button
-          id="welcomeServerBtn"
-          type="button"
-          class="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#f4effa] text-[#6b1d7a] flex items-center justify-center hover:bg-[#e6dcf6] transition"
-          title="Google Sheet Server Setup"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
-          </svg>
-        </button>
+        <button id="welcomeServerBtn" type="button" class="hidden" aria-hidden="true"></button>
 
         <!-- Double-Ring Purple User Icon -->
         <div class="w-[72px] h-[72px] rounded-full bg-[#f4effa] border border-[#ebe2f8] mx-auto flex items-center justify-center mb-5">
@@ -202,8 +192,8 @@
           </div>
         </form>
 
-        <!-- Direct Report Download on Welcome Screen (No Login Needed) -->
-        <div class="mt-6 pt-5 border-t border-[#eceaf4]">
+        <!-- Direct Report Download & Admin Portal on Welcome Screen -->
+        <div class="mt-6 pt-5 border-t border-[#eceaf4] space-y-2.5">
           <button
             id="openModuleReportBtn"
             type="button"
@@ -216,6 +206,20 @@
               <span>Download Report</span>
             </span>
             <span class="text-xs font-bold bg-white px-3 py-1 rounded-full shadow-2xs">Open →</span>
+          </button>
+
+          <button
+            id="openAdminPortalBtn"
+            type="button"
+            class="w-full py-3 px-5 rounded-2xl bg-[#eef5ff] hover:bg-[#dbeafe] border border-[#cde0fe] text-[#3882f6] font-extrabold text-sm transition flex items-center justify-between"
+          >
+            <span class="flex items-center gap-2.5">
+              <svg class="w-5 h-5 text-[#3882f6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              </svg>
+              <span>Admin Portal</span>
+            </span>
+            <span class="text-xs font-bold bg-white px-3 py-1 rounded-full shadow-2xs">Login →</span>
           </button>
         </div>
       </div>
@@ -303,7 +307,7 @@
         <button
           id="openHomeReportBtn"
           type="button"
-          class="buddy-row-card w-full p-5 flex items-center justify-between gap-3 text-left"
+          class="hidden"
         >
           <div class="flex items-center gap-4 min-w-0">
             <div class="w-12 h-12 rounded-2xl bg-[#f4effa] text-[#6b1d7a] flex items-center justify-center shrink-0">
@@ -889,263 +893,160 @@
     </div>
   </div>
 
-  <!-- MODAL 2: GOOGLE SHEET SERVER & CLUSTER MAPPING -->
+  <!-- MODAL 2: ADMIN PORTAL (PASSWORD: 3881) — EASY CLUSTER & EMPLOYEE MANAGEMENT -->
   <div id="serverConfigModal" class="hidden fixed inset-0 z-50 bg-[#1a1528]/55 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="buddy-card max-w-md w-full p-5 sm:p-6 max-h-[88vh] flex flex-col space-y-4">
-      <div class="flex items-center justify-between shrink-0">
-        <h3 class="text-base font-extrabold text-[#1a1528]">Google Sheet Server &amp; Mapping</h3>
+    <div class="buddy-card max-w-md w-full p-5 sm:p-6 max-h-[90vh] flex flex-col space-y-4">
+      <!-- Top Modal Header -->
+      <div class="flex items-center justify-between shrink-0 pb-3 border-b border-[#eceaf4]">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-[#f4effa] text-[#6b1d7a] flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold text-[#1a1528] leading-tight">Admin Portal</h3>
+            <p class="text-[11px] font-semibold text-[#787588]">Manage Cluster &amp; Employee Mapping</p>
+          </div>
+        </div>
         <button id="closeServerModalBtn" type="button" class="w-8 h-8 rounded-full bg-[#f4effa] text-[#6b1d7a] font-bold flex items-center justify-center">✕</button>
       </div>
 
-      <div class="overflow-y-auto space-y-4 text-xs pr-0.5">
-        <!-- Step 1: Download Pre-Built Functional Google Sheet File (.xlsx) -->
-        <div class="p-3.5 rounded-2xl bg-[#eef5ff] border border-[#dbeafe] space-y-2">
-          <div class="flex items-center justify-between gap-2">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#3882f6]">
-              1. Ready-Made Google Sheet File
-            </span>
-            <span class="text-[10px] font-bold bg-white text-[#3882f6] px-2 py-0.5 rounded-full">7 Tabs Ready</span>
-          </div>
-          <p class="text-[11px] text-[#475569] leading-relaxed">
-            Download the pre-built spreadsheet (with <strong>Cluster Mapping</strong>, <strong>Products</strong>, <strong>All Incidents</strong> &amp; all 4 module tabs) and upload to Google Drive, or let the script auto-create all tabs in a blank Google Sheet.
-          </p>
-          <button
-            id="downloadFullSheetTemplateBtn"
-            type="button"
-            class="brand-gradient brand-gradient-hover w-full py-2.5 px-3 rounded-xl text-white font-bold text-xs shadow-2xs flex items-center justify-center gap-2"
-          >
-            <span>Download Functional Google Sheet (.xlsx)</span>
-            <span>↓</span>
-          </button>
+      <!-- STEP A: ADMIN PASSWORD GATE (3881) -->
+      <div id="adminPasswordGate" class="space-y-4 py-2">
+        <div class="lavender-box p-4 text-center space-y-1">
+          <p class="text-xs font-extrabold text-[#6b1d7a]">Admin Authentication Required</p>
+          <p class="text-[11px] font-medium text-[#787588]">Enter the 4-digit Admin Password to add, edit, or remove Clusters &amp; Employees.</p>
         </div>
 
-        <!-- Step 2: Paste Deployed Web App URL -->
-        <div>
-          <label for="inputScriptUrl" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899] mb-1">
-            2. PASTE APPS SCRIPT WEB APP URL
-          </label>
-          <div class="flex gap-2">
+        <form id="adminLoginForm" class="space-y-3">
+          <div>
+            <label for="adminPasswordInput" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899] mb-1.5 pl-1">
+              ADMIN PASSWORD
+            </label>
             <input
-              id="inputScriptUrl"
-              type="url"
-              value="https://script.google.com/macros/s/AKfycbwDT00_HOajETPiRFrRCjXYhJTDAOeYRlbbGLXB_2QRlnRohLaAU-tKdmbwRh1IcZ-3/exec"
-              placeholder="https://script.google.com/macros/s/.../exec"
-              class="buddy-input flex-1 px-3 py-2 text-xs font-semibold"
+              id="adminPasswordInput"
+              type="password"
+              inputmode="numeric"
+              placeholder="Enter Password"
+              class="buddy-input px-4 py-3 text-center text-base font-extrabold tracking-widest"
             />
-            <button
-              id="saveScriptUrlBtn"
-              type="button"
-              class="brand-gradient px-3.5 py-2 rounded-xl text-white font-bold shrink-0"
-            >
-              Save
-            </button>
+            <p id="adminPasswordError" class="hidden text-xs font-bold text-rose-600 text-center mt-1.5">
+              Incorrect password. Please try again.
+            </p>
           </div>
-          <p id="scriptUrlHelper" class="text-[11px] text-[#787588] mt-1">
-            Reads &amp; updates incidents, <strong>Cluster Mapping</strong>, and <strong>Products</strong> live from your Google Sheet.
-          </p>
-        </div>
 
-        <!-- Editable Cluster & BDM Mapping Table (Mirrors 'Cluster Mapping' Sheet Tab) -->
+          <button
+            type="submit"
+            class="brand-gradient brand-gradient-hover w-full py-3.5 px-5 rounded-2xl text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2"
+          >
+            <span>Unlock Admin Portal</span>
+            <span>→</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- STEP B: UNLOCKED ADMIN PORTAL — CLUSTER & EMPLOYEE MANAGER -->
+      <div id="adminPortalContent" class="hidden overflow-y-auto space-y-4 text-xs pr-0.5">
+        <!-- Add / Update Employee Form -->
         <div class="lavender-box p-3.5 space-y-2.5">
           <div class="flex items-center justify-between gap-2">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#6b1d7a]">
-              Sheet Tab: Cluster Mapping
+            <span id="adminFormHeading" class="text-[11px] font-extrabold uppercase tracking-wider text-[#6b1d7a]">
+              Add Cluster &amp; Employee
+            </span>
+            <span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
+              Auto-Syncs to Google Sheet
+            </span>
+          </div>
+
+          <div class="space-y-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label for="adminClusterSelect" class="block text-[10px] font-bold uppercase tracking-wider text-[#787588] mb-1 pl-0.5">
+                  CHOOSE CLUSTER
+                </label>
+                <select id="adminClusterSelect" class="buddy-input buddy-select px-3 py-2 text-xs font-bold bg-white cursor-pointer">
+                  <option value="">Select Cluster</option>
+                  <option value="__NEW__">+ Add New Cluster...</option>
+                </select>
+              </div>
+
+              <div id="adminNewClusterWrap" class="hidden">
+                <label for="newMapClusterInput" class="block text-[10px] font-bold uppercase tracking-wider text-[#787588] mb-1 pl-0.5">
+                  NEW CLUSTER NAME
+                </label>
+                <input
+                  id="newMapClusterInput"
+                  type="text"
+                  placeholder="Enter New Cluster Name"
+                  class="buddy-input px-3 py-2 text-xs font-bold bg-white"
+                />
+              </div>
+
+              <div id="adminBdmInputWrap">
+                <label for="newMapBdmInput" class="block text-[10px] font-bold uppercase tracking-wider text-[#787588] mb-1 pl-0.5">
+                  EMPLOYEE / BDM NAME
+                </label>
+                <input
+                  id="newMapBdmInput"
+                  type="text"
+                  placeholder="Enter Employee / BDM Name"
+                  class="buddy-input px-3 py-2 text-xs font-bold bg-white"
+                />
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+              <button
+                id="addMapRowBtn"
+                type="button"
+                class="brand-gradient brand-gradient-hover flex-1 py-2.5 px-4 rounded-xl text-white font-bold text-xs shadow-xs flex items-center justify-center gap-1.5"
+              >
+                <span id="addMapRowBtnText">+ Add Employee to Cluster</span>
+              </button>
+              <button
+                id="cancelEditMapRowBtn"
+                type="button"
+                class="hidden px-3 py-2.5 rounded-xl bg-white border border-[#e4e1f0] text-[#787588] font-bold text-xs"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter by Cluster Pills -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[#8b8899]">
+              Mapped Employees (<span id="adminTotalMappedCount">0</span>)
             </span>
             <button
               id="exportClusterSheetBtn"
               type="button"
-              class="px-2.5 py-1 rounded-full bg-white text-[#6b1d7a] font-bold text-[10px] border border-[#e0d0f5]"
+              class="px-2.5 py-1 rounded-full bg-[#f4effa] text-[#6b1d7a] font-bold text-[10px] border border-[#e0d0f5]"
             >
-              Export Sheet (.xlsx)
+              Export List (.xlsx)
             </button>
           </div>
 
-          <!-- Add New Cluster-BDM Row to Sheet -->
-          <div class="grid grid-cols-5 gap-1.5">
-            <input
-              id="newMapClusterInput"
-              type="text"
-              placeholder="Cluster (e.g. Kollam)"
-              class="buddy-input col-span-2 px-2.5 py-1.5 text-xs font-semibold bg-white"
-            />
-            <input
-              id="newMapBdmInput"
-              type="text"
-              placeholder="Employee / BDM Name"
-              class="buddy-input col-span-2 px-2.5 py-1.5 text-xs font-semibold bg-white"
-            />
-            <button
-              id="addMapRowBtn"
-              type="button"
-              class="brand-gradient rounded-xl text-white font-bold text-xs flex items-center justify-center"
-            >
-              + Add
-            </button>
-          </div>
+          <div id="adminClusterFilterPills" class="flex flex-wrap gap-1.5"></div>
 
-          <div id="clusterMappingTableContainer" class="max-h-36 overflow-y-auto bg-white rounded-xl border border-[#e6dcf6] divide-y divide-[#f0ebf8]"></div>
+          <!-- Mapped Cluster -> Employee List (with Edit & Delete) -->
+          <div id="clusterMappingTableContainer" class="max-h-60 overflow-y-auto bg-white rounded-2xl border border-[#eceaf4] divide-y divide-[#f0ebf8]"></div>
         </div>
 
-        <div class="space-y-1.5">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-[#8b8899]">Google Sheet Script (Code.gs)</span>
-            <button
-              id="copyAppsScriptBtn"
-              type="button"
-              class="px-2.5 py-1 rounded-full bg-[#f4effa] text-[#6b1d7a] font-bold"
-            >
-              Copy Code
-            </button>
-          </div>
-          <pre id="appsScriptCodeBlock" class="bg-[#1a1528] text-purple-100 p-3 rounded-xl text-[10px] font-mono overflow-x-auto max-h-40 leading-relaxed">const SHEET_TABS = ['Renewal', 'SIMBA', 'Policy Document Related', 'Policy Not Reflecting in PR'];
-const MAPPING_TAB = 'Cluster Mapping';
-const PRODUCTS_TAB = 'Products';
-const HEADERS = [
-  'Incident Number', 'Incident Raised Date', 'BDM Name', 'Cluster Name',
-  'Category', 'Sub-Category', 'Customer Name', 'Product / Policy Name',
-  'Previous Year Policy Number', 'Policy Number / Quote Number',
-  'Agent Name', 'IMD Code', 'Premium Amount',
-  'Remark', 'Current Remark', 'Status', 'Last Updated'
-];
-const INITIAL_CLUSTER_ROWS = [
-  ['Kollam', 'Shahid S'], ['Kollam', 'Athira S'], ['Kollam', 'Sachin S'], ['Kollam', 'Parvathy M D'],
-  ['Trivandrum', 'Unni S'], ['Trivandrum', 'Sona S Raj'], ['Trivandrum', 'Vishal Steephen'], ['Trivandrum', 'Anakha V'], ['Trivandrum', 'Pranav Govind'],
-  ['Kottayam', 'Jacob Jherald'], ['Kottayam', 'Reshmi Sreekrishnan'], ['Kottayam', 'Sambhu K S'], ['Kottayam', 'Sidhartha Kanjirakkattu'], ['Kottayam', 'Kannan Satheesan'],
-  ['Cochin', 'Sivaprasanth B'], ['Cochin', 'K S Vyshnav'], ['Cochin', 'Arun Nair'],
-  ['Thrissur', 'Nidhin P S']
-];
-const INITIAL_PRODUCTS = [
-  ['Super Health'], ['Health Alpha'], ['Super Top-Up'], ['Arogya Top-Up'],
-  ['Arogya Supreme'], ['Arogya Sanjeevani'], ['IPA'], ['Cyber Vault']
-];
-
-function ensureSheets() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  // 1. Ensure 'Cluster Mapping' sheet tab exists (editable directly in Google Sheet anytime)
-  let mapSheet = ss.getSheetByName(MAPPING_TAB);
-  if (!mapSheet) {
-    mapSheet = ss.insertSheet(MAPPING_TAB);
-    mapSheet.appendRow(['Cluster Name', 'Employee Name']);
-    mapSheet.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#f4effa');
-    INITIAL_CLUSTER_ROWS.forEach(r => mapSheet.appendRow(r));
-  }
-  // 2. Ensure 'Products' sheet tab exists (editable directly in Google Sheet anytime)
-  let prodSheet = ss.getSheetByName(PRODUCTS_TAB);
-  if (!prodSheet) {
-    prodSheet = ss.insertSheet(PRODUCTS_TAB);
-    prodSheet.appendRow(['Product / Policy Name']);
-    prodSheet.getRange(1, 1, 1, 1).setFontWeight('bold').setBackground('#f4effa');
-    INITIAL_PRODUCTS.forEach(r => prodSheet.appendRow(r));
-  }
-  // 3. Ensure 'All Incidents' and all 4 module tabs exist
-  ['All Incidents'].concat(SHEET_TABS).forEach(name => {
-    let sh = ss.getSheetByName(name);
-    if (!sh) {
-      sh = ss.insertSheet(name);
-      sh.appendRow(HEADERS);
-      sh.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold').setBackground('#f4effa');
-    }
-  });
-  return ss;
-}
-
-function doGet() {
-  const ss = ensureSheets();
-  // Read Cluster & Employee mapping dynamically from 'Cluster Mapping' sheet tab
-  const mapRows = ss.getSheetByName(MAPPING_TAB).getDataRange().getValues();
-  const clusterMapping = mapRows.slice(1)
-    .filter(r => String(r[0] || '').trim() && String(r[1] || '').trim())
-    .map(r => ({ clusterName: String(r[0]).trim(), bdmName: String(r[1]).trim() }));
-
-  // Read Products dynamically from 'Products' sheet tab
-  const prodRows = ss.getSheetByName(PRODUCTS_TAB).getDataRange().getValues();
-  const products = prodRows.slice(1)
-    .map(r => String(r[0] || '').trim())
-    .filter(Boolean);
-
-  const master = ss.getSheetByName('All Incidents');
-  const rows = master.getDataRange().getValues();
-  const data = rows.slice(1).map(r => ({
-    incidentNumber: String(r[0] || ''),
-    incidentDate: String(r[1] || ''),
-    managerName: String(r[2] || ''),
-    clusterName: String(r[3] || ''),
-    category: String(r[4] || ''),
-    subCategory: String(r[5] || ''),
-    customerName: String(r[6] || ''),
-    policyName: String(r[7] || ''),
-    prevPolicyNumber: String(r[8] || ''),
-    policyOrQuoteNumber: String(r[9] || ''),
-    agentName: String(r[10] || ''),
-    imdCode: String(r[11] || ''),
-    premiumAmount: String(r[12] || ''),
-    remark: String(r[13] || ''),
-    currentRemark: String(r[14] || ''),
-    status: String(r[15] || 'Unresolved'),
-    updatedAt: String(r[16] || '')
-  }));
-  return ContentService.createTextOutput(JSON.stringify({
-    ok: true,
-    clusterMapping: clusterMapping,
-    products: products,
-    incidents: data
-  })).setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  const ss = ensureSheets();
-  const payload = JSON.parse(e.postData.contents);
-  const action = payload.action;
-
-  if (action === 'syncMapping' && Array.isArray(payload.clusterMapping)) {
-    const mapSheet = ss.getSheetByName(MAPPING_TAB);
-    mapSheet.clearContents();
-    mapSheet.appendRow(['Cluster Name', 'Employee Name']);
-    payload.clusterMapping.forEach(m => {
-      if (m.clusterName && m.bdmName) mapSheet.appendRow([m.clusterName, m.bdmName]);
-    });
-    return ContentService.createTextOutput(JSON.stringify({ ok: true }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-
-  const item = payload.incident;
-  if (action === 'create') {
-    const row = [
-      item.incidentNumber, item.incidentDate, item.managerName, item.clusterName,
-      item.category, item.subCategory, item.customerName, item.policyName,
-      item.prevPolicyNumber || '', item.policyOrQuoteNumber || '',
-      item.agentName || '', item.imdCode || '', item.premiumAmount || '',
-      item.remark, item.currentRemark || '', item.status || 'Unresolved', item.updatedAt
-    ];
-    ss.getSheetByName('All Incidents').appendRow(row);
-    const modSheet = ss.getSheetByName(item.category);
-    if (modSheet) modSheet.appendRow(row);
-  } else if (action === 'update') {
-    ['All Incidents', item.category].forEach(tab => {
-      const sh = ss.getSheetByName(tab);
-      if (!sh) return;
-      const vals = sh.getDataRange().getValues();
-      for (let i = 1; i < vals.length; i++) {
-        if (String(vals[i][0]) === String(item.incidentNumber)) {
-          sh.getRange(i + 1, 15).setValue(item.currentRemark || '');
-          sh.getRange(i + 1, 16).setValue(item.status || 'Unresolved');
-          sh.getRange(i + 1, 17).setValue(item.updatedAt || '');
-        }
-      }
-    });
-  }
-  return ContentService.createTextOutput(JSON.stringify({ ok: true }))
-    .setMimeType(ContentService.MimeType.JSON);
-}</pre>
-        </div>
-
-        <div class="pt-2 border-t border-[#eceaf4] flex items-center justify-between gap-2">
-          <button id="resetDemoDataBtn" type="button" class="px-3 py-1.5 rounded-full bg-[#f4effa] text-[#6b1d7a] font-bold">
-            Reset Demo
-          </button>
-          <button id="clearAllDataBtn" type="button" class="px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 font-bold">
-            Clear All
-          </button>
+        <!-- Hidden Technical Hooks Preserved for Compatibility -->
+        <div class="hidden">
+          <input
+            id="inputScriptUrl"
+            type="url"
+            value="https://script.google.com/macros/s/AKfycbwDT00_HOajETPiRFrRCjXYhJTDAOeYRlbbGLXB_2QRlnRohLaAU-tKdmbwRh1IcZ-3/exec"
+          />
+          <button id="saveScriptUrlBtn" type="button">Save</button>
+          <button id="downloadFullSheetTemplateBtn" type="button">Download</button>
+          <button id="resetDemoDataBtn" type="button">Reset</button>
+          <button id="clearAllDataBtn" type="button">Clear</button>
         </div>
       </div>
     </div>
@@ -1687,47 +1588,181 @@ function doPost(e) {
         }
       }
 
+      let adminFilterCluster = 'ALL';
+      let adminEditingIndex = null;
+
+      function populateAdminClusterSelect(selectedCluster) {
+        const sel = document.getElementById('adminClusterSelect');
+        const newWrap = document.getElementById('adminNewClusterWrap');
+        if (!sel) return;
+
+        const clusters = getUniqueClustersFromMapping();
+        sel.innerHTML = '<option value="">Select Cluster</option>';
+        clusters.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          sel.appendChild(opt);
+        });
+        const newOpt = document.createElement('option');
+        newOpt.value = '__NEW__';
+        newOpt.textContent = '+ Add New Cluster...';
+        sel.appendChild(newOpt);
+
+        if (selectedCluster && clusters.includes(selectedCluster)) {
+          sel.value = selectedCluster;
+          if (newWrap) newWrap.classList.add('hidden');
+        } else if (selectedCluster === '__NEW__') {
+          sel.value = '__NEW__';
+          if (newWrap) newWrap.classList.remove('hidden');
+        } else {
+          sel.value = clusters[0] || '__NEW__';
+          if (newWrap) newWrap.classList.toggle('hidden', sel.value !== '__NEW__');
+        }
+      }
+
+      function resetAdminEditState() {
+        adminEditingIndex = null;
+        const heading = document.getElementById('adminFormHeading');
+        const btnText = document.getElementById('addMapRowBtnText');
+        const cancelBtn = document.getElementById('cancelEditMapRowBtn');
+        const bdmInput = document.getElementById('newMapBdmInput');
+        const cluInput = document.getElementById('newMapClusterInput');
+        if (heading) heading.textContent = 'Add Cluster & Employee';
+        if (btnText) btnText.textContent = '+ Add Employee to Cluster';
+        if (cancelBtn) cancelBtn.classList.add('hidden');
+        if (bdmInput) bdmInput.value = '';
+        if (cluInput) cluInput.value = '';
+      }
+
       function renderClusterMappingModalTable() {
         const container = document.getElementById('clusterMappingTableContainer');
+        const pillsWrap = document.getElementById('adminClusterFilterPills');
+        const totalCountEl = document.getElementById('adminTotalMappedCount');
         if (!container) return;
+
+        const allMappings = state.clusterMapping || [];
+        if (totalCountEl) totalCountEl.textContent = allMappings.length;
+
+        const clusters = getUniqueClustersFromMapping();
+        if (adminFilterCluster !== 'ALL' && !clusters.includes(adminFilterCluster)) {
+          adminFilterCluster = 'ALL';
+        }
+
+        populateAdminClusterSelect(
+          adminEditingIndex !== null && allMappings[adminEditingIndex]
+            ? allMappings[adminEditingIndex].clusterName
+            : (adminFilterCluster !== 'ALL' ? adminFilterCluster : undefined)
+        );
+
+        if (pillsWrap) {
+          pillsWrap.innerHTML = '';
+          const allPill = document.createElement('button');
+          allPill.type = 'button';
+          allPill.className = adminFilterCluster === 'ALL'
+            ? 'px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#6b1d7a] text-white'
+            : 'px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#f4effa] text-[#6b1d7a]';
+          allPill.textContent = `All (${allMappings.length})`;
+          allPill.addEventListener('click', () => {
+            adminFilterCluster = 'ALL';
+            renderClusterMappingModalTable();
+          });
+          pillsWrap.appendChild(allPill);
+
+          clusters.forEach(c => {
+            const count = allMappings.filter(m => m.clusterName === c).length;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = adminFilterCluster === c
+              ? 'px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#6b1d7a] text-white'
+              : 'px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#f4effa] text-[#6b1d7a]';
+            btn.textContent = `${c} (${count})`;
+            btn.addEventListener('click', () => {
+              adminFilterCluster = c;
+              renderClusterMappingModalTable();
+            });
+            pillsWrap.appendChild(btn);
+          });
+        }
+
         container.innerHTML = '';
 
-        if (!state.clusterMapping || state.clusterMapping.length === 0) {
-          container.innerHTML = '<div class="p-3 text-center text-[#787588]">No cluster mappings found</div>';
+        const visibleRows = allMappings
+          .map((item, idx) => ({ item, idx }))
+          .filter(entry => adminFilterCluster === 'ALL' || entry.item.clusterName === adminFilterCluster);
+
+        if (visibleRows.length === 0) {
+          container.innerHTML = '<div class="p-4 text-center text-[#787588] font-semibold">No employees mapped in this cluster</div>';
           return;
         }
 
-        state.clusterMapping.forEach((item, index) => {
+        visibleRows.forEach(({ item, idx }) => {
           const row = document.createElement('div');
-          row.className = 'flex items-center justify-between px-3 py-2 text-xs';
+          row.className = 'flex items-center justify-between px-3.5 py-2.5 text-xs hover:bg-[#fcfaff]';
           row.innerHTML = `
-            <div class="min-w-0 pr-2">
-              <span class="font-extrabold text-[#6b1d7a]">${escapeHtml(item.clusterName)}</span>
-              <span class="text-[#cbb6e2] mx-1">→</span>
-              <span class="font-bold text-[#1a1528]">${escapeHtml(item.bdmName)}</span>
+            <div class="min-w-0 pr-2 flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded-full bg-[#f4effa] font-extrabold text-[#6b1d7a] text-[11px]">${escapeHtml(item.clusterName)}</span>
+              <span class="font-bold text-[#1a1528] truncate">${escapeHtml(item.bdmName)}</span>
             </div>
-            <button
-              type="button"
-              data-del-map-idx="${index}"
-              class="del-map-row-btn text-rose-600 hover:text-rose-800 font-bold text-[11px] px-1.5 py-0.5 rounded"
-              title="Remove mapping row"
-            >
-              ✕
-            </button>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                data-edit-map-idx="${idx}"
+                class="edit-map-row-btn px-2 py-1 rounded-lg bg-[#eef5ff] text-[#3882f6] hover:bg-[#dbeafe] font-bold text-[11px]"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                data-del-map-idx="${idx}"
+                class="del-map-row-btn px-2 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold text-[11px]"
+                title="Remove employee"
+              >
+                Delete
+              </button>
+            </div>
           `;
           container.appendChild(row);
+        });
+
+        container.querySelectorAll('.edit-map-row-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const idx = Number(btn.getAttribute('data-edit-map-idx'));
+            const target = state.clusterMapping[idx];
+            if (!target) return;
+            adminEditingIndex = idx;
+            populateAdminClusterSelect(target.clusterName);
+            const bdmInput = document.getElementById('newMapBdmInput');
+            if (bdmInput) {
+              bdmInput.value = target.bdmName;
+              bdmInput.focus();
+            }
+            const heading = document.getElementById('adminFormHeading');
+            const btnText = document.getElementById('addMapRowBtnText');
+            const cancelBtn = document.getElementById('cancelEditMapRowBtn');
+            if (heading) heading.textContent = `Edit Employee (${target.bdmName})`;
+            if (btnText) btnText.textContent = 'Save Changes';
+            if (cancelBtn) cancelBtn.classList.remove('hidden');
+          });
         });
 
         container.querySelectorAll('.del-map-row-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const idx = Number(btn.getAttribute('data-del-map-idx'));
             if (!isNaN(idx)) {
+              const removed = state.clusterMapping[idx];
               state.clusterMapping.splice(idx, 1);
+              if (adminEditingIndex === idx) {
+                resetAdminEditState();
+              }
               saveClusterMappingToStorage();
               renderClusterMappingModalTable();
               renderWelcomeClusterAndBdmDropdowns(state.profile.clusterName, state.profile.managerName);
               renderCustomReportSummary();
               syncMappingToGoogleSheet();
+              if (removed) {
+                showToast(`Removed ${removed.bdmName}`);
+              }
             }
           });
         });
@@ -3010,60 +3045,104 @@ function doPost(e) {
         document.getElementById('confirmUpdateModalBtn').addEventListener('click', () => saveModalTicketUpdate(false));
         document.getElementById('directResolveModalBtn').addEventListener('click', () => saveModalTicketUpdate(true));
 
-        document.getElementById('openServerModalBtn').addEventListener('click', () => {
+        function openAdminPortalModal() {
+          resetAdminEditState();
+          document.getElementById('adminPasswordGate').classList.remove('hidden');
+          document.getElementById('adminPortalContent').classList.add('hidden');
+          document.getElementById('adminPasswordError').classList.add('hidden');
+          const pwdInput = document.getElementById('adminPasswordInput');
+          if (pwdInput) pwdInput.value = '';
           document.getElementById('serverConfigModal').classList.remove('hidden');
-        });
-        document.getElementById('welcomeServerBtn').addEventListener('click', () => {
-          document.getElementById('serverConfigModal').classList.remove('hidden');
-        });
+          setTimeout(() => {
+            if (pwdInput) pwdInput.focus();
+          }, 50);
+        }
+
+        document.getElementById('openAdminPortalBtn').addEventListener('click', openAdminPortalModal);
+        document.getElementById('openServerModalBtn').addEventListener('click', openAdminPortalModal);
+        document.getElementById('welcomeServerBtn').addEventListener('click', openAdminPortalModal);
         document.getElementById('closeServerModalBtn').addEventListener('click', () => {
           document.getElementById('serverConfigModal').classList.add('hidden');
         });
+
+        document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const pwd = document.getElementById('adminPasswordInput').value.trim();
+          if (pwd === '3881') {
+            document.getElementById('adminPasswordError').classList.add('hidden');
+            document.getElementById('adminPasswordGate').classList.add('hidden');
+            document.getElementById('adminPortalContent').classList.remove('hidden');
+            renderClusterMappingModalTable();
+            showToast('Admin Portal Unlocked');
+          } else {
+            document.getElementById('adminPasswordError').classList.remove('hidden');
+            showToast('Invalid Admin Password');
+          }
+        });
+
+        document.getElementById('adminClusterSelect').addEventListener('change', (e) => {
+          const isNew = e.target.value === '__NEW__';
+          document.getElementById('adminNewClusterWrap').classList.toggle('hidden', !isNew);
+          if (isNew) {
+            document.getElementById('newMapClusterInput').focus();
+          }
+        });
+
+        document.getElementById('cancelEditMapRowBtn').addEventListener('click', () => {
+          resetAdminEditState();
+          renderClusterMappingModalTable();
+        });
+
         document.getElementById('saveScriptUrlBtn').addEventListener('click', () => {
           const url = document.getElementById('inputScriptUrl').value.trim();
           state.scriptUrl = url;
           safeSetStorage(STORAGE_KEYS.SCRIPT_URL, url);
           updateServerBadgeUI();
-          document.getElementById('serverConfigModal').classList.add('hidden');
-          if (url) {
-            pullFromGoogleSheetServer(true);
-          } else {
-            showToast('Local Mode Active');
-          }
-        });
-
-        document.getElementById('copyAppsScriptBtn').addEventListener('click', () => {
-          const code = document.getElementById('appsScriptCodeBlock').textContent;
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(code).then(() => {
-              showToast('Copied Script!');
-            }).catch(() => fallbackCopyText(code));
-          } else {
-            fallbackCopyText(code);
-          }
         });
 
         document.getElementById('addMapRowBtn').addEventListener('click', () => {
+          const clusterSel = document.getElementById('adminClusterSelect');
           const cluEl = document.getElementById('newMapClusterInput');
           const bdmEl = document.getElementById('newMapBdmInput');
-          const cluVal = cluEl.value.trim();
+          const chosenCluster = clusterSel.value === '__NEW__'
+            ? cluEl.value.trim()
+            : clusterSel.value.trim();
           const bdmVal = bdmEl.value.trim();
-          if (!cluVal || !bdmVal) {
-            showToast('Enter Cluster and Employee Name');
+
+          if (!chosenCluster || !bdmVal) {
+            showToast('Select Cluster and Enter Employee Name');
             return;
           }
-          state.clusterMapping.push({ clusterName: cluVal, bdmName: bdmVal });
-          saveClusterMappingToStorage();
-          cluEl.value = '';
-          bdmEl.value = '';
-          renderClusterMappingModalTable();
-          renderWelcomeClusterAndBdmDropdowns(
-            document.getElementById('inputClusterName').value || cluVal,
-            document.getElementById('inputManagerName').value || bdmVal
-          );
-          renderCustomReportSummary();
-          syncMappingToGoogleSheet();
-          showToast(`Added ${bdmVal} (${cluVal})`);
+
+          if (adminEditingIndex !== null && state.clusterMapping[adminEditingIndex]) {
+            state.clusterMapping[adminEditingIndex] = {
+              clusterName: chosenCluster,
+              bdmName: bdmVal
+            };
+            saveClusterMappingToStorage();
+            resetAdminEditState();
+            renderClusterMappingModalTable();
+            renderWelcomeClusterAndBdmDropdowns(
+              document.getElementById('inputClusterName').value || chosenCluster,
+              document.getElementById('inputManagerName').value || bdmVal
+            );
+            renderCustomReportSummary();
+            syncMappingToGoogleSheet();
+            showToast(`Updated ${bdmVal} (${chosenCluster})`);
+          } else {
+            state.clusterMapping.push({ clusterName: chosenCluster, bdmName: bdmVal });
+            saveClusterMappingToStorage();
+            cluEl.value = '';
+            bdmEl.value = '';
+            renderClusterMappingModalTable();
+            renderWelcomeClusterAndBdmDropdowns(
+              document.getElementById('inputClusterName').value || chosenCluster,
+              document.getElementById('inputManagerName').value || bdmVal
+            );
+            renderCustomReportSummary();
+            syncMappingToGoogleSheet();
+            showToast(`Added ${bdmVal} (${chosenCluster})`);
+          }
         });
 
         function downloadMasterGoogleSheetTemplate() {
@@ -3188,15 +3267,10 @@ function doPost(e) {
           showToast('Cleared Tickets');
         });
 
-        // Once chosen on a given day, keep the same BDM & Cluster for the entire day and open directly on Homepage;
-        // on the next day, show the Welcome Screen first time with the previous Cluster & BDM auto-populated.
-        const todayStr = getTodayDateString();
-        if (state.profile.managerName && state.profile.clusterName && state.profile.loginDate === todayStr) {
-          navigateTo('homepage');
-        } else {
-          renderWelcomeClusterAndBdmDropdowns(state.profile.clusterName, state.profile.managerName);
-          navigateTo('profileGate');
-        }
+        // Always open on the Welcome Screen (so Download Report & Admin Portal are always accessible)
+        // while keeping the previously selected Cluster & BDM pre-populated for 1-tap login.
+        renderWelcomeClusterAndBdmDropdowns(state.profile.clusterName, state.profile.managerName);
+        navigateTo('profileGate');
       }
 
       function fallbackCopyText(text) {
