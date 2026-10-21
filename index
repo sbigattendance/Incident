@@ -1,0 +1,3220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Incident Tracker</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      overflow-x: hidden;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f6f5fa;
+      color: #1a1528;
+      -webkit-font-smoothing: antialiased;
+    }
+    .brand-gradient {
+      background: linear-gradient(90deg, #6b1d7a 0%, #574bcf 50%, #3882f6 100%);
+    }
+    .brand-gradient-hover:active,
+    .brand-gradient-hover:hover {
+      background: linear-gradient(90deg, #5a1668 0%, #4b3ec2 50%, #2570eb 100%);
+    }
+    .buddy-card {
+      background: #ffffff;
+      border-radius: 26px;
+      border: 1px solid #eceaf4;
+      box-shadow: 0 14px 36px -10px rgba(45, 20, 75, 0.08);
+    }
+    .buddy-row-card {
+      background: #ffffff;
+      border-radius: 20px;
+      border: 1.5px solid #eceaf4;
+      box-shadow: 0 4px 14px -4px rgba(45, 20, 75, 0.05);
+      transition: all 0.16s ease;
+    }
+    .buddy-row-card:hover,
+    .buddy-row-card:active {
+      border-color: #6b1d7a;
+      background-color: #fcfaff;
+    }
+    .buddy-input {
+      display: block;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+      -webkit-appearance: none;
+      appearance: none;
+      background-color: #f9f8fc;
+      border: 1.5px solid #e4e1f0;
+      border-radius: 14px;
+      color: #1a1528;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+    input[type="date"].buddy-input {
+      min-height: 46px;
+      line-height: 1.25rem;
+    }
+    .buddy-input:focus {
+      background-color: #ffffff;
+      border-color: #6b1d7a;
+      box-shadow: 0 0 0 3px rgba(107, 29, 122, 0.1);
+      outline: none;
+    }
+    .lavender-box {
+      background-color: #f4effa;
+      border: 1px solid #e6dcf6;
+      border-radius: 16px;
+      color: #6b1d7a;
+    }
+    select.buddy-select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b1d7a' stroke-width='2.4'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      background-size: 16px 16px;
+      padding-right: 40px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top App Header (Shown inside Portal & Report views; NO "Edit/Switch BDM" clutter) -->
+  <header id="appTopHeader" class="hidden bg-white border-b border-[#eceaf4] sticky top-0 z-30">
+    <div class="w-full max-w-3xl mx-auto px-3.5 sm:px-6 h-14 flex items-center justify-between gap-2">
+      <!-- Left: Brand -->
+      <button id="navBrandBtn" type="button" class="flex items-center gap-2.5 text-left focus:outline-none min-w-0">
+        <div class="w-8 h-8 rounded-full bg-[#f4effa] flex items-center justify-center shrink-0">
+          <div class="w-5 h-5 rounded-full bg-[#6b1d7a] flex items-center justify-center text-white">
+            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+        </div>
+        <span class="text-base font-extrabold tracking-tight text-[#1a1528] truncate">Incident Tracker</span>
+      </button>
+
+      <!-- Right: Read-Only BDM Badge (No Edit button) + Sheet Sync -->
+      <div class="flex items-center gap-2 shrink-0">
+        <div id="headerProfileBadge" class="flex items-center gap-1.5 bg-[#f4effa] border border-[#e6dcf6] rounded-full px-3 py-1 text-xs">
+          <span class="w-2 h-2 rounded-full bg-[#6b1d7a]"></span>
+          <span id="headerManagerName" class="font-bold text-[#6b1d7a] truncate max-w-[95px]">—</span>
+          <span class="text-[#cbb6e2]">•</span>
+          <span id="headerClusterName" class="font-semibold text-[#6b1d7a] truncate max-w-[75px]">—</span>
+        </div>
+
+        <button id="openServerModalBtn" type="button" class="w-8 h-8 rounded-full border border-[#e4e1f0] bg-[#f9f8fc] flex items-center justify-center shrink-0" title="Google Sheet Server">
+          <span id="syncStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <span id="syncStatusText" class="sr-only">Google Sheet Server</span>
+        </button>
+      </div>
+    </div>
+
+
+  </header>
+
+  <!-- Main App Container -->
+  <main class="flex-1 w-full max-w-3xl mx-auto px-3.5 sm:px-6 pt-3.5 pb-8 flex flex-col justify-start">
+
+    <!-- VIEW 1: WELCOME SCREEN (Login for BDM + Direct Download Report Without Login) -->
+    <section id="viewProfileGate" class="w-full max-w-md mx-auto pt-4 space-y-4">
+      <div class="buddy-card p-6 sm:p-8 relative">
+        <!-- Subtle Top-Right Sheet Server Setup Icon on Welcome Screen -->
+        <button
+          id="welcomeServerBtn"
+          type="button"
+          class="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#f4effa] text-[#6b1d7a] flex items-center justify-center hover:bg-[#e6dcf6] transition"
+          title="Google Sheet Server Setup"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+          </svg>
+        </button>
+
+        <!-- Double-Ring Purple User Icon -->
+        <div class="w-[72px] h-[72px] rounded-full bg-[#f4effa] border border-[#ebe2f8] mx-auto flex items-center justify-center mb-5">
+          <div class="w-9 h-9 rounded-full bg-[#6b1d7a] flex items-center justify-center text-white shadow-xs">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+            </svg>
+          </div>
+        </div>
+
+        <h1 class="text-2xl font-extrabold text-[#1a1528] text-center tracking-tight">
+          Welcome to Incident Tracker
+        </h1>
+        <p class="text-xs sm:text-sm text-[#787588] text-center mt-1.5 mb-6">
+          Select your Cluster &amp; BDM Name to Access portal
+        </p>
+
+        <form id="profileForm" class="space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-1.5 pl-1 pr-1">
+              <label for="inputClusterName" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899]">
+                CLUSTER NAME
+              </label>
+              <span id="mappingSourceBadge" class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                Live Google Sheet
+              </span>
+            </div>
+            <select
+              id="inputClusterName"
+              required
+              class="buddy-input buddy-select py-3 px-4 text-sm sm:text-base font-bold cursor-pointer"
+            >
+              <option value="">Select Cluster Name</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="inputManagerName" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899] mb-1.5 pl-1">
+              BDM / EMPLOYEE NAME
+            </label>
+            <select
+              id="inputManagerName"
+              required
+              class="buddy-input buddy-select py-3 px-4 text-sm sm:text-base font-bold cursor-pointer"
+            >
+              <option value="">Select Cluster First</option>
+            </select>
+          </div>
+
+          <input id="inputEmployeeName" type="hidden" value="" />
+
+          <div class="pt-1">
+            <button
+              type="submit"
+              class="brand-gradient brand-gradient-hover w-full py-3.5 px-6 rounded-2xl text-white font-bold text-base shadow-md transition flex items-center justify-center gap-2 whitespace-nowrap"
+            >
+              <span>Enter Dashboard</span>
+              <span>→</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Direct Report Download on Welcome Screen (No Login Needed) -->
+        <div class="mt-6 pt-5 border-t border-[#eceaf4]">
+          <button
+            id="openModuleReportBtn"
+            type="button"
+            class="w-full py-3.5 px-5 rounded-2xl bg-[#f4effa] hover:bg-[#e8dcf6] border border-[#e0d0f5] text-[#6b1d7a] font-extrabold text-sm transition flex items-center justify-between"
+          >
+            <span class="flex items-center gap-2.5">
+              <svg class="w-5 h-5 text-[#6b1d7a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <span>Download Report</span>
+            </span>
+            <span class="text-xs font-bold bg-white px-3 py-1 rounded-full shadow-2xs">Open →</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: LOGGED-IN EMPLOYEE DASHBOARD (Only Incident Details & Update Status; No BDM Switcher Clutter) -->
+    <section id="viewHomepage" class="hidden w-full space-y-4">
+      <!-- Clean Hero Banner (No Change BDM / Switch Cluster Buttons) -->
+      <div class="brand-gradient rounded-[24px] p-5 text-white shadow-md">
+        <div class="flex items-center justify-between gap-2 mb-4">
+          <div class="min-w-0">
+            <h2 id="homeWelcomeName" class="text-xl font-extrabold truncate">BDM</h2>
+            <p id="homeClusterLabel" class="text-xs font-semibold text-purple-100 truncate mt-0.5">Cluster</p>
+          </div>
+
+          <button
+            id="homeSyncBtn"
+            type="button"
+            class="px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs font-bold border border-white/20 whitespace-nowrap shrink-0"
+          >
+            ← Welcome
+          </button>
+        </div>
+
+        <!-- 3 Uniform Single-Line Counter Boxes -->
+        <div class="grid grid-cols-3 gap-2.5">
+          <div class="bg-white/14 rounded-2xl py-2.5 px-2 text-center border border-white/15 flex flex-col justify-center">
+            <div id="kpiTotalAll" class="text-xl font-extrabold text-white leading-tight">0</div>
+            <div class="text-[10px] font-bold text-purple-100 whitespace-nowrap mt-0.5">Total Incident</div>
+          </div>
+          <div class="bg-white/14 rounded-2xl py-2.5 px-2 text-center border border-white/15 flex flex-col justify-center">
+            <div id="kpiUnresolvedAll" class="text-xl font-extrabold text-amber-300 leading-tight">0</div>
+            <div class="text-[10px] font-bold text-purple-100 whitespace-nowrap mt-0.5">UnResolved</div>
+          </div>
+          <div class="bg-white/14 rounded-2xl py-2.5 px-2 text-center border border-white/15 flex flex-col justify-center">
+            <div id="kpiResolvedAll" class="text-xl font-extrabold text-emerald-300 leading-tight">0</div>
+            <div class="text-[10px] font-bold text-purple-100 whitespace-nowrap mt-0.5">Resolved</div>
+          </div>
+        </div>
+        <span id="kpiMyManagerActive" class="hidden">0</span>
+        <span id="kpiMyManagerLabel" class="hidden"></span>
+      </div>
+
+      <!-- 2 Core Employee Modules: Incident Details & Update Status -->
+      <div class="space-y-3.5">
+        <!-- Module 1: Incident Details -->
+        <button
+          id="openModuleIncidentBtn"
+          type="button"
+          class="buddy-row-card w-full p-5 flex items-center justify-between gap-3 text-left"
+        >
+          <div class="flex items-center gap-4 min-w-0">
+            <div class="w-12 h-12 rounded-2xl bg-[#f4effa] text-[#6b1d7a] flex items-center justify-center shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"></path>
+              </svg>
+            </div>
+            <span class="text-base font-extrabold text-[#1a1528] truncate">Incident Details</span>
+          </div>
+          <span class="brand-gradient px-4 py-2 rounded-xl text-white text-xs font-bold shrink-0 whitespace-nowrap">
+            Open →
+          </span>
+        </button>
+
+        <!-- Module 2: Update Status -->
+        <button
+          id="openModuleUpdateBtn"
+          type="button"
+          class="buddy-row-card w-full p-5 flex items-center justify-between gap-3 text-left"
+        >
+          <div class="flex items-center gap-4 min-w-0">
+            <div class="w-12 h-12 rounded-2xl bg-[#eef5ff] text-[#3882f6] flex items-center justify-center shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              </svg>
+            </div>
+            <span class="text-base font-extrabold text-[#1a1528] truncate">Update Status</span>
+          </div>
+          <span class="brand-gradient px-4 py-2 rounded-xl text-white text-xs font-bold shrink-0 whitespace-nowrap">
+            Open →
+          </span>
+        </button>
+
+        <!-- Module 3: Download Report (Also accessible directly from Homepage during the day) -->
+        <button
+          id="openHomeReportBtn"
+          type="button"
+          class="buddy-row-card w-full p-5 flex items-center justify-between gap-3 text-left"
+        >
+          <div class="flex items-center gap-4 min-w-0">
+            <div class="w-12 h-12 rounded-2xl bg-[#f4effa] text-[#6b1d7a] flex items-center justify-center shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+            </div>
+            <span class="text-base font-extrabold text-[#1a1528] truncate">Download Report</span>
+          </div>
+          <span class="brand-gradient px-4 py-2 rounded-xl text-white text-xs font-bold shrink-0 whitespace-nowrap">
+            Open →
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <!-- VIEW 3: MODULE 1 — INCIDENT DETAILS -->
+    <section id="viewIncidentDetails" class="hidden w-full space-y-4">
+      <div class="buddy-card p-5 sm:p-6">
+        <!-- Top Navigation & Step Indicator -->
+        <div class="flex items-center justify-between gap-2 pb-4 mb-5 border-b border-[#eceaf4]">
+          <button id="incidentBackToHomeBtn" type="button" class="px-3 py-1.5 rounded-full bg-[#f4effa] text-[#6b1d7a] text-xs font-bold whitespace-nowrap shrink-0">
+            ← Back
+          </button>
+
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span id="wizStepBadge1" class="px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-[#6b1d7a] text-white">1. Type</span>
+            <span id="wizStepBadge2" class="px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-[#f4effa] text-[#787588]">2. Issue</span>
+            <span id="wizStepBadge3" class="px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-[#f4effa] text-[#787588]">3. Form</span>
+          </div>
+        </div>
+
+        <!-- STEP 1: Choose Main Category -->
+        <div id="incidentStep1" class="space-y-3">
+          <h2 class="text-lg font-extrabold text-[#1a1528] text-center mb-4">Incident Related To</h2>
+
+          <button
+            type="button"
+            data-main-category="Renewal"
+            class="main-cat-btn buddy-row-card w-full p-4 text-left flex items-center justify-between gap-3"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="w-9 h-9 rounded-full bg-[#f4effa] text-[#6b1d7a] font-extrabold text-xs flex items-center justify-center shrink-0">1</span>
+              <span class="font-extrabold text-sm text-[#1a1528] truncate">Renewal</span>
+            </div>
+            <span class="text-[#6b1d7a] font-bold shrink-0">→</span>
+          </button>
+
+          <button
+            type="button"
+            data-main-category="SIMBA"
+            class="main-cat-btn buddy-row-card w-full p-4 text-left flex items-center justify-between gap-3"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="w-9 h-9 rounded-full bg-[#eef5ff] text-[#3882f6] font-extrabold text-xs flex items-center justify-center shrink-0">2</span>
+              <span class="font-extrabold text-sm text-[#1a1528] truncate">SIMBA</span>
+            </div>
+            <span class="text-[#3882f6] font-bold shrink-0">→</span>
+          </button>
+
+          <button
+            type="button"
+            data-main-category="Policy Document Related"
+            class="main-cat-btn buddy-row-card w-full p-4 text-left flex items-center justify-between gap-3"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="w-9 h-9 rounded-full bg-[#f4effa] text-[#6b1d7a] font-extrabold text-xs flex items-center justify-center shrink-0">3</span>
+              <span class="font-extrabold text-sm text-[#1a1528] truncate">Policy Document Related</span>
+            </div>
+            <span class="text-[#6b1d7a] font-bold shrink-0">→</span>
+          </button>
+
+          <button
+            type="button"
+            data-main-category="Policy Not Reflecting in PR"
+            class="main-cat-btn buddy-row-card w-full p-4 text-left flex items-center justify-between gap-3"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="w-9 h-9 rounded-full bg-[#eef5ff] text-[#3882f6] font-extrabold text-xs flex items-center justify-center shrink-0">4</span>
+              <span class="font-extrabold text-sm text-[#1a1528] truncate">Policy Not Reflecting in PR</span>
+            </div>
+            <span class="text-[#3882f6] font-bold shrink-0">→</span>
+          </button>
+        </div>
+
+        <!-- STEP 2: Choose Sub-Category -->
+        <div id="incidentStep2" class="hidden space-y-4">
+          <div class="flex items-center justify-between gap-2">
+            <span id="step2CategoryLabel" class="px-3 py-1 rounded-full bg-[#f4effa] text-[#6b1d7a] text-xs font-extrabold truncate">Category</span>
+            <span id="step2CategoryInline" class="hidden"></span>
+            <button id="backToStep1Btn" type="button" class="hidden">← Back</button>
+          </div>
+
+          <h2 class="text-base font-extrabold text-[#1a1528]">Incident Related To</h2>
+
+          <div id="subCategoryOptionsContainer" class="space-y-2.5"></div>
+        </div>
+
+        <!-- STEP 3: Enter Incident Details Form -->
+        <div id="incidentStep3" class="hidden space-y-4">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+              <span id="formCategoryPill" class="px-2.5 py-1 rounded-full bg-[#f4effa] text-[#6b1d7a] text-xs font-extrabold">Category</span>
+              <span id="formSubCategoryPill" class="px-2.5 py-1 rounded-full bg-[#eef5ff] text-[#3882f6] text-xs font-bold">Sub-Type</span>
+            </div>
+            <button id="backToStep2Btn" type="button" class="hidden">← Back</button>
+          </div>
+
+          <span id="formManagerDisplay" class="hidden"></span>
+          <span id="formClusterDisplay" class="hidden"></span>
+
+          <form id="incidentDetailsForm" class="space-y-3.5">
+            <div>
+              <label for="fieldIncidentDate" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899] mb-1">
+                INCIDENT RAISED DATE
+              </label>
+              <input
+                id="fieldIncidentDate"
+                type="date"
+                required
+                class="buddy-input px-3.5 py-2.5 text-sm font-semibold"
+              />
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="fieldIncidentNumber" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899]">
+                  INCIDENT NUMBER
+                </label>
+                <button id="generateIncidentNumBtn" type="button" class="hidden">Auto ID</button>
+              </div>
+              <input
+                id="fieldIncidentNumber"
+                type="text"
+                required
+                placeholder="Enter Incident Number"
+                class="buddy-input px-3.5 py-2.5 text-sm font-semibold"
+              />
+            </div>
+
+            <div>
+              <label for="fieldCustomerName" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899] mb-1">
+                CUSTOMER NAME
+              </label>
+              <input
+                id="fieldCustomerName"
+                type="text"
+                required
+                placeholder="Enter Customer Name"
+                class="buddy-input px-3.5 py-2.5 text-sm font-semibold"
+              />
+            </div>
+
+            <div>
+              <label for="fieldPolicyName" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899] mb-1">
+                PRODUCT / POLICY NAME
+              </label>
+              <select
+                id="fieldPolicyName"
+                required
+                class="buddy-input buddy-select px-3.5 py-2.5 text-sm font-semibold cursor-pointer"
+              >
+                <option value="">Select Product / Policy Name</option>
+                <option value="Super Health">Super Health</option>
+                <option value="Health Alpha">Health Alpha</option>
+                <option value="Super Top-Up">Super Top-Up</option>
+                <option value="Arogya Top-Up">Arogya Top-Up</option>
+                <option value="Arogya Supreme">Arogya Supreme</option>
+                <option value="Arogya Sanjeevani">Arogya Sanjeevani</option>
+                <option value="IPA">IPA</option>
+                <option value="Cyber Vault">Cyber Vault</option>
+              </select>
+            </div>
+
+            <!-- Dynamic Policy / Quote Fields -->
+            <div id="dynamicPolicyFieldsGrid" class="space-y-3.5">
+              <div id="eitherPolicyNotice" class="hidden px-3 py-2 rounded-xl bg-[#f4effa] border border-[#e6dcf6] text-[11px] font-bold text-[#6b1d7a]">
+                * Enter either <strong>Previous Year Policy Number</strong> OR <strong>Policy Number / Quote Number</strong> (at least one is mandatory).
+              </div>
+
+              <div id="wrapPrevPolicyNumber" class="hidden">
+                <label for="fieldPrevPolicyNumber" id="labelPrevPolicyNumber" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899] mb-1">
+                  PREVIOUS YEAR POLICY NUMBER
+                </label>
+                <input
+                  id="fieldPrevPolicyNumber"
+                  type="text"
+                  placeholder="Enter Previous Year Policy Number"
+                  class="buddy-input px-3.5 py-2.5 text-sm font-semibold"
+                />
+                <p id="hintPrevPolicyNumber" class="hidden"></p>
+              </div>
+
+              <div id="wrapPolicyOrQuoteNumber" class="hidden">
+                <label for="fieldPolicyOrQuoteNumber" id="labelPolicyOrQuoteNumber" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899] mb-1">
+                  POLICY NUMBER / QUOTE NUMBER
+                </label>
+                <input
+                  id="fieldPolicyOrQuoteNumber"
+                  type="text"
+                  placeholder="Enter Policy Number / Quote Number"
+                  class="buddy-input px-3.5 py-2.5 text-sm font-semibold"
+                />
+                <p id="hintPolicyOrQuoteNumber" class="hidden"></p>
+              </div>
+
+              <!-- Additional Fields for Policy Not Reflecting in PR -->
+              <div id="wrapPrExtraFields" class="hidden space-y-3.5 pt-1">
+                <div>
+                  <label for="fieldAgentName" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899] mb-1">
+                    AGENT NAME
+                  </label>
+                  <input
+                    id="fieldAgentName"
+                    type="text"
+                    placeholder="Enter Agent Name"
+                    class="buddy-input px-3.5 py-2.5 text-sm font-semibold"
+                  />
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label for="fieldImdCode" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899] mb-1">
+                      IMD CODE
+                    </label>
+                    <input
+                      id="fieldImdCode"
+                      type="text"
+                      placeholder="Enter IMD Code"
+                      class="buddy-input px-3.5 py-2.5 text-sm font-semibold"
+                    />
+                  </div>
+
+                  <div>
+                    <label for="fieldPremiumAmount" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899] mb-1">
+                      PREMIUM AMOUNT
+                    </label>
+                    <input
+                      id="fieldPremiumAmount"
+                      type="number"
+                      step="any"
+                      min="0"
+                      placeholder="Enter Premium Amount"
+                      class="buddy-input px-3.5 py-2.5 text-sm font-semibold"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label for="fieldRemark" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899] mb-1">
+                REMARK
+              </label>
+              <textarea
+                id="fieldRemark"
+                rows="3"
+                required
+                placeholder="Enter Remark..."
+                class="buddy-input px-3.5 py-2.5 text-sm font-medium"
+              ></textarea>
+            </div>
+
+            <div class="pt-2 space-y-2">
+              <button
+                type="submit"
+                class="brand-gradient brand-gradient-hover w-full py-3.5 px-6 rounded-2xl text-white text-sm font-bold shadow-md transition flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <span>Submit Incident</span>
+                <span>→</span>
+              </button>
+              <button
+                id="cancelIncidentFormBtn"
+                type="button"
+                class="w-full py-2.5 rounded-xl text-xs font-bold text-[#787588]"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 4: MODULE 2 — UPDATE STATUS (Minimal 4-Field Cards: Incident Number, Date of Incident Raised, Related to, Click to Open) -->
+    <section id="viewUpdateStatus" class="hidden w-full space-y-3.5">
+      <div class="buddy-card p-4 sm:p-5 space-y-3.5">
+        <div class="flex items-center justify-between gap-2">
+          <button id="updateBackToHomeBtn" type="button" class="px-3 py-1.5 rounded-full bg-[#f4effa] text-[#6b1d7a] text-xs font-bold whitespace-nowrap shrink-0">
+            ← Back
+          </button>
+          <h2 class="text-base font-extrabold text-[#1a1528] truncate">Update Status</h2>
+          <span class="w-14"></span>
+        </div>
+
+        <!-- Search Input by Customer Name, Incident Number, or BDM Name -->
+        <div class="relative">
+          <svg class="w-4 h-4 text-[#8b8899] absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <input
+            id="updateSearchInput"
+            type="text"
+            placeholder="Search Customer, Incident # or BDM Name..."
+            class="buddy-input pl-10 pr-8 py-2.5 text-sm font-semibold"
+          />
+          <button id="clearUpdateSearchBtn" type="button" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-[#8b8899] text-xs font-bold">✕</button>
+        </div>
+
+        <!-- Category & Ageing Headings to Filter Easily After Search -->
+        <div id="updateCategoryHeadings" class="flex flex-wrap gap-1.5 pt-0.5"></div>
+        <div id="updateAgeingHeadings" class="flex flex-wrap gap-1.5 pt-0.5"></div>
+
+
+      </div>
+
+      <!-- Minimal Ticket Rows: ONLY Incident Number, Date of Incident Raised, Related to, Click to Open -->
+      <div id="updateCardsContainer" class="space-y-2.5"></div>
+      <table class="hidden"><tbody id="updateTableBody"></tbody></table>
+
+      <div id="updateEmptyState" class="hidden buddy-card p-8 text-center">
+        <p class="text-sm font-bold text-[#787588]">No unresolved incidents found</p>
+      </div>
+    </section>
+
+    <!-- VIEW 5: DOWNLOAD REPORT (Opened Directly From Welcome Screen Without Login) -->
+    <section id="viewDownloadReport" class="hidden w-full space-y-3.5">
+      <div class="buddy-card p-4 sm:p-5 space-y-3.5">
+        <div class="flex items-center justify-between gap-2">
+          <button id="reportBackToHomeBtn" type="button" class="px-3.5 py-1.5 rounded-full bg-[#f4effa] text-[#6b1d7a] text-xs font-bold whitespace-nowrap shrink-0">
+            ← Back
+          </button>
+          <h2 id="reportHeaderTitle" class="text-base font-extrabold text-[#1a1528] truncate">Download Report</h2>
+          <span id="reportHeaderModuleBadge" class="hidden px-2.5 py-1 rounded-full bg-[#f4effa] text-[#6b1d7a] text-[11px] font-extrabold truncate max-w-[110px]">UnResolved</span>
+          <span id="reportHeaderSpacer" class="w-14"></span>
+        </div>
+
+        <!-- Search Bar shown when viewing Unresolved List inside Download Report -->
+        <div id="reportUnresolvedSearchWrap" class="hidden space-y-2.5">
+          <div class="relative">
+            <svg class="w-4 h-4 text-[#8b8899] absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <input
+              id="reportUnresolvedSearchInput"
+              type="text"
+              placeholder="Search Customer, Incident # or BDM Name..."
+              class="buddy-input pl-10 pr-8 py-2.5 text-sm font-semibold"
+            />
+            <button id="clearReportUnresolvedSearchBtn" type="button" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-[#8b8899] text-xs font-bold">✕</button>
+          </div>
+
+          <!-- Category & Ageing Headings to Filter Easily After Search -->
+          <div id="reportCategoryHeadings" class="flex flex-wrap gap-1.5 pt-0.5"></div>
+          <div id="reportAgeingHeadings" class="flex flex-wrap gap-1.5 pt-0.5"></div>
+        </div>
+      </div>
+
+      <!-- STEP 1: Custom Report Generator (Ageing, Cluster, Category Wise) + Report Modules Stack -->
+      <div id="reportStep1Container" class="space-y-3.5">
+        <div class="buddy-card p-4 sm:p-5 space-y-3.5 border-2 border-[#e0d0f5]">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <div class="w-8 h-8 rounded-xl bg-[#f4effa] text-[#6b1d7a] flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                </svg>
+              </div>
+              <h3 class="text-base font-extrabold text-[#1a1528] truncate">Custom Report Generator</h3>
+            </div>
+            <button
+              id="resetCustomReportFiltersBtn"
+              type="button"
+              class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#f4effa] text-[#6b1d7a] hover:bg-[#e8dcf6] shrink-0"
+            >
+              Reset
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label for="customFilterCategory" class="block text-[10px] font-bold uppercase tracking-wider text-[#8b8899] mb-1 pl-1">
+                CATEGORY WISE
+              </label>
+              <select id="customFilterCategory" class="buddy-input px-3 py-2.5 text-xs font-bold">
+                <option value="ALL">All Categories</option>
+                <option value="Renewal">Renewal</option>
+                <option value="SIMBA">SIMBA</option>
+                <option value="Policy Document Related">Policy Document Related</option>
+                <option value="Policy Not Reflecting in PR">Policy Not Reflecting in PR</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="customFilterCluster" class="block text-[10px] font-bold uppercase tracking-wider text-[#8b8899] mb-1 pl-1">
+                CLUSTER WISE
+              </label>
+              <select id="customFilterCluster" class="buddy-input px-3 py-2.5 text-xs font-bold">
+                <option value="ALL">All Clusters</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="customFilterAgeing" class="block text-[10px] font-bold uppercase tracking-wider text-[#8b8899] mb-1 pl-1">
+                AGEING WISE
+              </label>
+              <select id="customFilterAgeing" class="buddy-input px-3 py-2.5 text-xs font-bold">
+                <option value="ALL">All Ageing</option>
+                <option value="0-1">0 - 1 Days (Fresh)</option>
+                <option value="2-3">2 - 3 Days</option>
+                <option value="4-7">4 - 7 Days</option>
+                <option value="8+">Above 7 Days (&gt; 7 Days)</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="customFilterStatus" class="block text-[10px] font-bold uppercase tracking-wider text-[#8b8899] mb-1 pl-1">
+                TICKET STATUS
+              </label>
+              <select id="customFilterStatus" class="buddy-input px-3 py-2.5 text-xs font-bold">
+                <option value="Unresolved">UnResolved Only</option>
+                <option value="ALL">All (UnResolved + Resolved)</option>
+                <option value="Resolved">Resolved Only</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Live Custom Filter Counters -->
+          <div class="grid grid-cols-3 gap-2">
+            <div class="rounded-2xl py-2.5 px-2 text-center bg-[#f9f8fc] border border-[#eceaf4]">
+              <div id="customKpiTotal" class="text-lg font-extrabold text-[#1a1528] leading-tight">0</div>
+              <div class="text-[10px] font-bold text-[#787588] whitespace-nowrap mt-0.5">Total Incident</div>
+            </div>
+            <button
+              id="openCustomUnresolvedListBtn"
+              type="button"
+              class="rounded-2xl py-2.5 px-2 text-center bg-[#f4effa] hover:bg-[#e8dcf6] active:scale-[0.98] border-2 border-[#d8c2f2] transition cursor-pointer flex flex-col items-center justify-center"
+              title="Click to view matching Unresolved incidents"
+            >
+              <div id="customKpiUnresolved" class="text-lg font-extrabold text-[#6b1d7a] leading-tight">0</div>
+              <div class="text-[10px] font-extrabold text-[#6b1d7a] whitespace-nowrap mt-0.5 underline decoration-[#6b1d7a]/50">UnResolved ↗</div>
+            </button>
+            <div class="rounded-2xl py-2.5 px-2 text-center bg-[#eef5ff] border border-[#dbeafe]">
+              <div id="customKpiResolved" class="text-lg font-extrabold text-[#3882f6] leading-tight">0</div>
+              <div class="text-[10px] font-bold text-[#3882f6] whitespace-nowrap mt-0.5">Resolved</div>
+            </div>
+          </div>
+
+          <button
+            id="downloadCustomReportBtn"
+            type="button"
+            class="brand-gradient brand-gradient-hover w-full py-3.5 px-4 rounded-xl text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-2 whitespace-nowrap"
+          >
+            <span>Download Custom Report (.xlsx)</span>
+            <span>→</span>
+          </button>
+        </div>
+
+        <div id="reportModulesGrid" class="space-y-3"></div>
+      </div>
+
+      <!-- STEP 2: Unresolved Incidents List (Same as Update Status / Remark) -->
+      <div id="reportUnresolvedListSection" class="hidden space-y-2.5">
+        <div id="reportUnresolvedCardsContainer" class="space-y-2.5"></div>
+        <div id="reportUnresolvedEmptyState" class="hidden buddy-card p-8 text-center">
+          <p class="text-sm font-bold text-[#787588]">No unresolved incidents found</p>
+        </div>
+      </div>
+
+      <table class="hidden"><tbody id="reportPreviewTableBody"></tbody></table>
+    </section>
+
+  </main>
+
+  <!-- MODAL 1: INCIDENT DETAILS & UPDATE REMARK / RESOLVED -->
+  <div id="updateTicketModal" class="hidden fixed inset-0 z-50 bg-[#1a1528]/55 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="buddy-card max-w-md w-full p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between gap-2 pb-3 border-b border-[#eceaf4]">
+        <div>
+          <span id="modalTicketIdBadge" class="inline-block px-3 py-1 rounded-full text-xs font-extrabold bg-[#f4effa] text-[#6b1d7a]">INC-000</span>
+        </div>
+        <button id="closeUpdateModalBtn" type="button" class="w-8 h-8 rounded-full bg-[#f4effa] text-[#6b1d7a] font-bold flex items-center justify-center shrink-0">✕</button>
+      </div>
+
+      <!-- Full Incident Details Display -->
+      <div class="lavender-box p-4 space-y-2.5 text-xs">
+        <div class="flex justify-between gap-2">
+          <span class="text-[#787588] font-semibold">Date Raised:</span>
+          <strong id="modalTicketDate" class="font-bold text-[#1a1528] text-right">—</strong>
+        </div>
+        <div class="flex justify-between gap-2">
+          <span class="text-[#787588] font-semibold">Ticket Ageing:</span>
+          <strong id="modalTicketAgeing" class="font-extrabold text-[#6b1d7a] text-right">—</strong>
+        </div>
+        <div class="flex justify-between gap-2">
+          <span class="text-[#787588] font-semibold">Related To:</span>
+          <strong id="modalCategoryInfo" class="font-bold text-[#6b1d7a] text-right">—</strong>
+        </div>
+        <div class="flex justify-between gap-2">
+          <span class="text-[#787588] font-semibold">Customer Name:</span>
+          <strong id="modalCustomerName" class="font-extrabold text-[#1a1528] text-right">—</strong>
+        </div>
+        <div class="flex justify-between gap-2">
+          <span class="text-[#787588] font-semibold">Product / Policy:</span>
+          <strong id="modalPolicyInfo" class="font-bold text-[#1a1528] text-right">—</strong>
+        </div>
+        <div id="modalPrevPolicyRow" class="hidden flex justify-between gap-2">
+          <span class="text-[#787588] font-semibold">Prev. Year Policy #:</span>
+          <strong id="modalPrevPolicyNum" class="font-bold text-[#1a1528] text-right">—</strong>
+        </div>
+        <div id="modalCurrPolicyRow" class="hidden flex justify-between gap-2">
+          <span class="text-[#787588] font-semibold">Policy / Quote #:</span>
+          <strong id="modalCurrPolicyNum" class="font-bold text-[#1a1528] text-right">—</strong>
+        </div>
+        <div id="modalPrDetailsBlock" class="hidden space-y-2 pt-1.5 border-t border-[#e6dcf6]">
+          <div class="flex justify-between gap-2">
+            <span class="text-[#787588] font-semibold">Agent Name:</span>
+            <strong id="modalAgentName" class="font-bold text-[#1a1528] text-right">—</strong>
+          </div>
+          <div class="flex justify-between gap-2">
+            <span class="text-[#787588] font-semibold">IMD Code:</span>
+            <strong id="modalImdCode" class="font-bold text-[#1a1528] text-right">—</strong>
+          </div>
+          <div class="flex justify-between gap-2">
+            <span class="text-[#787588] font-semibold">Premium Amount:</span>
+            <strong id="modalPremiumAmount" class="font-extrabold text-[#6b1d7a] text-right">—</strong>
+          </div>
+        </div>
+        <div class="flex justify-between gap-2">
+          <span class="text-[#787588] font-semibold">BDM / Cluster:</span>
+          <strong id="modalManagerInfo" class="font-bold text-[#1a1528] text-right">—</strong>
+        </div>
+        <div class="pt-2 border-t border-[#e6dcf6]">
+          <span class="text-[#787588] font-semibold block">Initial Remark:</span>
+          <p id="modalOriginalRemark" class="font-semibold text-[#1a1528] mt-0.5 break-words">—</p>
+        </div>
+        <div>
+          <span class="text-[#787588] font-semibold block">Current Remark:</span>
+          <p id="modalExistingCurrentRemark" class="font-bold text-[#6b1d7a] mt-0.5 break-words">—</p>
+        </div>
+      </div>
+
+
+
+      <!-- Update New Remark Input -->
+      <div id="modalRemarkInputWrapper" class="space-y-1.5">
+        <label for="modalCurrentRemarkInput" id="modalRemarkInputLabel" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899]">
+          UPDATE NEW REMARK
+        </label>
+        <textarea
+          id="modalCurrentRemarkInput"
+          rows="3"
+          placeholder="Type new remark to update Current Remark..."
+          class="buddy-input px-3.5 py-2.5 text-sm font-medium"
+        ></textarea>
+      </div>
+
+      <!-- Two Direct One-Tap Action Buttons: Update Remark OR Resolved -->
+      <div class="grid grid-cols-2 gap-2.5 pt-1">
+        <button
+          id="confirmUpdateModalBtn"
+          type="button"
+          class="brand-gradient brand-gradient-hover py-3.5 px-3 rounded-xl text-white text-xs font-bold shadow-sm whitespace-nowrap"
+        >
+          Update Remark
+        </button>
+        <button
+          id="directResolveModalBtn"
+          type="button"
+          class="py-3.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm whitespace-nowrap"
+        >
+          Resolved ✓
+        </button>
+      </div>
+
+      <button
+        id="cancelUpdateModalBtn"
+        type="button"
+        class="w-full py-2 rounded-xl text-xs font-bold text-[#787588]"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 2: GOOGLE SHEET SERVER & CLUSTER MAPPING -->
+  <div id="serverConfigModal" class="hidden fixed inset-0 z-50 bg-[#1a1528]/55 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="buddy-card max-w-md w-full p-5 sm:p-6 max-h-[88vh] flex flex-col space-y-4">
+      <div class="flex items-center justify-between shrink-0">
+        <h3 class="text-base font-extrabold text-[#1a1528]">Google Sheet Server &amp; Mapping</h3>
+        <button id="closeServerModalBtn" type="button" class="w-8 h-8 rounded-full bg-[#f4effa] text-[#6b1d7a] font-bold flex items-center justify-center">✕</button>
+      </div>
+
+      <div class="overflow-y-auto space-y-4 text-xs pr-0.5">
+        <!-- Step 1: Download Pre-Built Functional Google Sheet File (.xlsx) -->
+        <div class="p-3.5 rounded-2xl bg-[#eef5ff] border border-[#dbeafe] space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#3882f6]">
+              1. Ready-Made Google Sheet File
+            </span>
+            <span class="text-[10px] font-bold bg-white text-[#3882f6] px-2 py-0.5 rounded-full">7 Tabs Ready</span>
+          </div>
+          <p class="text-[11px] text-[#475569] leading-relaxed">
+            Download the pre-built spreadsheet (with <strong>Cluster Mapping</strong>, <strong>Products</strong>, <strong>All Incidents</strong> &amp; all 4 module tabs) and upload to Google Drive, or let the script auto-create all tabs in a blank Google Sheet.
+          </p>
+          <button
+            id="downloadFullSheetTemplateBtn"
+            type="button"
+            class="brand-gradient brand-gradient-hover w-full py-2.5 px-3 rounded-xl text-white font-bold text-xs shadow-2xs flex items-center justify-center gap-2"
+          >
+            <span>Download Functional Google Sheet (.xlsx)</span>
+            <span>↓</span>
+          </button>
+        </div>
+
+        <!-- Step 2: Paste Deployed Web App URL -->
+        <div>
+          <label for="inputScriptUrl" class="block text-[11px] font-bold uppercase tracking-wider text-[#8b8899] mb-1">
+            2. PASTE APPS SCRIPT WEB APP URL
+          </label>
+          <div class="flex gap-2">
+            <input
+              id="inputScriptUrl"
+              type="url"
+              value="https://script.google.com/macros/s/AKfycbwDT00_HOajETPiRFrRCjXYhJTDAOeYRlbbGLXB_2QRlnRohLaAU-tKdmbwRh1IcZ-3/exec"
+              placeholder="https://script.google.com/macros/s/.../exec"
+              class="buddy-input flex-1 px-3 py-2 text-xs font-semibold"
+            />
+            <button
+              id="saveScriptUrlBtn"
+              type="button"
+              class="brand-gradient px-3.5 py-2 rounded-xl text-white font-bold shrink-0"
+            >
+              Save
+            </button>
+          </div>
+          <p id="scriptUrlHelper" class="text-[11px] text-[#787588] mt-1">
+            Reads &amp; updates incidents, <strong>Cluster Mapping</strong>, and <strong>Products</strong> live from your Google Sheet.
+          </p>
+        </div>
+
+        <!-- Editable Cluster & BDM Mapping Table (Mirrors 'Cluster Mapping' Sheet Tab) -->
+        <div class="lavender-box p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-[#6b1d7a]">
+              Sheet Tab: Cluster Mapping
+            </span>
+            <button
+              id="exportClusterSheetBtn"
+              type="button"
+              class="px-2.5 py-1 rounded-full bg-white text-[#6b1d7a] font-bold text-[10px] border border-[#e0d0f5]"
+            >
+              Export Sheet (.xlsx)
+            </button>
+          </div>
+
+          <!-- Add New Cluster-BDM Row to Sheet -->
+          <div class="grid grid-cols-5 gap-1.5">
+            <input
+              id="newMapClusterInput"
+              type="text"
+              placeholder="Cluster (e.g. Kollam)"
+              class="buddy-input col-span-2 px-2.5 py-1.5 text-xs font-semibold bg-white"
+            />
+            <input
+              id="newMapBdmInput"
+              type="text"
+              placeholder="Employee / BDM Name"
+              class="buddy-input col-span-2 px-2.5 py-1.5 text-xs font-semibold bg-white"
+            />
+            <button
+              id="addMapRowBtn"
+              type="button"
+              class="brand-gradient rounded-xl text-white font-bold text-xs flex items-center justify-center"
+            >
+              + Add
+            </button>
+          </div>
+
+          <div id="clusterMappingTableContainer" class="max-h-36 overflow-y-auto bg-white rounded-xl border border-[#e6dcf6] divide-y divide-[#f0ebf8]"></div>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[#8b8899]">Google Sheet Script (Code.gs)</span>
+            <button
+              id="copyAppsScriptBtn"
+              type="button"
+              class="px-2.5 py-1 rounded-full bg-[#f4effa] text-[#6b1d7a] font-bold"
+            >
+              Copy Code
+            </button>
+          </div>
+          <pre id="appsScriptCodeBlock" class="bg-[#1a1528] text-purple-100 p-3 rounded-xl text-[10px] font-mono overflow-x-auto max-h-40 leading-relaxed">const SHEET_TABS = ['Renewal', 'SIMBA', 'Policy Document Related', 'Policy Not Reflecting in PR'];
+const MAPPING_TAB = 'Cluster Mapping';
+const PRODUCTS_TAB = 'Products';
+const HEADERS = [
+  'Incident Number', 'Incident Raised Date', 'BDM Name', 'Cluster Name',
+  'Category', 'Sub-Category', 'Customer Name', 'Product / Policy Name',
+  'Previous Year Policy Number', 'Policy Number / Quote Number',
+  'Agent Name', 'IMD Code', 'Premium Amount',
+  'Remark', 'Current Remark', 'Status', 'Last Updated'
+];
+const INITIAL_CLUSTER_ROWS = [
+  ['Kollam', 'Shahid S'], ['Kollam', 'Athira S'], ['Kollam', 'Sachin S'], ['Kollam', 'Parvathy M D'],
+  ['Trivandrum', 'Unni S'], ['Trivandrum', 'Sona S Raj'], ['Trivandrum', 'Vishal Steephen'], ['Trivandrum', 'Anakha V'], ['Trivandrum', 'Pranav Govind'],
+  ['Kottayam', 'Jacob Jherald'], ['Kottayam', 'Reshmi Sreekrishnan'], ['Kottayam', 'Sambhu K S'], ['Kottayam', 'Sidhartha Kanjirakkattu'], ['Kottayam', 'Kannan Satheesan'],
+  ['Cochin', 'Sivaprasanth B'], ['Cochin', 'K S Vyshnav'], ['Cochin', 'Arun Nair'],
+  ['Thrissur', 'Nidhin P S']
+];
+const INITIAL_PRODUCTS = [
+  ['Super Health'], ['Health Alpha'], ['Super Top-Up'], ['Arogya Top-Up'],
+  ['Arogya Supreme'], ['Arogya Sanjeevani'], ['IPA'], ['Cyber Vault']
+];
+
+function ensureSheets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  // 1. Ensure 'Cluster Mapping' sheet tab exists (editable directly in Google Sheet anytime)
+  let mapSheet = ss.getSheetByName(MAPPING_TAB);
+  if (!mapSheet) {
+    mapSheet = ss.insertSheet(MAPPING_TAB);
+    mapSheet.appendRow(['Cluster Name', 'Employee Name']);
+    mapSheet.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#f4effa');
+    INITIAL_CLUSTER_ROWS.forEach(r => mapSheet.appendRow(r));
+  }
+  // 2. Ensure 'Products' sheet tab exists (editable directly in Google Sheet anytime)
+  let prodSheet = ss.getSheetByName(PRODUCTS_TAB);
+  if (!prodSheet) {
+    prodSheet = ss.insertSheet(PRODUCTS_TAB);
+    prodSheet.appendRow(['Product / Policy Name']);
+    prodSheet.getRange(1, 1, 1, 1).setFontWeight('bold').setBackground('#f4effa');
+    INITIAL_PRODUCTS.forEach(r => prodSheet.appendRow(r));
+  }
+  // 3. Ensure 'All Incidents' and all 4 module tabs exist
+  ['All Incidents'].concat(SHEET_TABS).forEach(name => {
+    let sh = ss.getSheetByName(name);
+    if (!sh) {
+      sh = ss.insertSheet(name);
+      sh.appendRow(HEADERS);
+      sh.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold').setBackground('#f4effa');
+    }
+  });
+  return ss;
+}
+
+function doGet() {
+  const ss = ensureSheets();
+  // Read Cluster & Employee mapping dynamically from 'Cluster Mapping' sheet tab
+  const mapRows = ss.getSheetByName(MAPPING_TAB).getDataRange().getValues();
+  const clusterMapping = mapRows.slice(1)
+    .filter(r => String(r[0] || '').trim() && String(r[1] || '').trim())
+    .map(r => ({ clusterName: String(r[0]).trim(), bdmName: String(r[1]).trim() }));
+
+  // Read Products dynamically from 'Products' sheet tab
+  const prodRows = ss.getSheetByName(PRODUCTS_TAB).getDataRange().getValues();
+  const products = prodRows.slice(1)
+    .map(r => String(r[0] || '').trim())
+    .filter(Boolean);
+
+  const master = ss.getSheetByName('All Incidents');
+  const rows = master.getDataRange().getValues();
+  const data = rows.slice(1).map(r => ({
+    incidentNumber: String(r[0] || ''),
+    incidentDate: String(r[1] || ''),
+    managerName: String(r[2] || ''),
+    clusterName: String(r[3] || ''),
+    category: String(r[4] || ''),
+    subCategory: String(r[5] || ''),
+    customerName: String(r[6] || ''),
+    policyName: String(r[7] || ''),
+    prevPolicyNumber: String(r[8] || ''),
+    policyOrQuoteNumber: String(r[9] || ''),
+    agentName: String(r[10] || ''),
+    imdCode: String(r[11] || ''),
+    premiumAmount: String(r[12] || ''),
+    remark: String(r[13] || ''),
+    currentRemark: String(r[14] || ''),
+    status: String(r[15] || 'Unresolved'),
+    updatedAt: String(r[16] || '')
+  }));
+  return ContentService.createTextOutput(JSON.stringify({
+    ok: true,
+    clusterMapping: clusterMapping,
+    products: products,
+    incidents: data
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const ss = ensureSheets();
+  const payload = JSON.parse(e.postData.contents);
+  const action = payload.action;
+
+  if (action === 'syncMapping' && Array.isArray(payload.clusterMapping)) {
+    const mapSheet = ss.getSheetByName(MAPPING_TAB);
+    mapSheet.clearContents();
+    mapSheet.appendRow(['Cluster Name', 'Employee Name']);
+    payload.clusterMapping.forEach(m => {
+      if (m.clusterName && m.bdmName) mapSheet.appendRow([m.clusterName, m.bdmName]);
+    });
+    return ContentService.createTextOutput(JSON.stringify({ ok: true }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const item = payload.incident;
+  if (action === 'create') {
+    const row = [
+      item.incidentNumber, item.incidentDate, item.managerName, item.clusterName,
+      item.category, item.subCategory, item.customerName, item.policyName,
+      item.prevPolicyNumber || '', item.policyOrQuoteNumber || '',
+      item.agentName || '', item.imdCode || '', item.premiumAmount || '',
+      item.remark, item.currentRemark || '', item.status || 'Unresolved', item.updatedAt
+    ];
+    ss.getSheetByName('All Incidents').appendRow(row);
+    const modSheet = ss.getSheetByName(item.category);
+    if (modSheet) modSheet.appendRow(row);
+  } else if (action === 'update') {
+    ['All Incidents', item.category].forEach(tab => {
+      const sh = ss.getSheetByName(tab);
+      if (!sh) return;
+      const vals = sh.getDataRange().getValues();
+      for (let i = 1; i < vals.length; i++) {
+        if (String(vals[i][0]) === String(item.incidentNumber)) {
+          sh.getRange(i + 1, 15).setValue(item.currentRemark || '');
+          sh.getRange(i + 1, 16).setValue(item.status || 'Unresolved');
+          sh.getRange(i + 1, 17).setValue(item.updatedAt || '');
+        }
+      }
+    });
+  }
+  return ContentService.createTextOutput(JSON.stringify({ ok: true }))
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+        </div>
+
+        <div class="pt-2 border-t border-[#eceaf4] flex items-center justify-between gap-2">
+          <button id="resetDemoDataBtn" type="button" class="px-3 py-1.5 rounded-full bg-[#f4effa] text-[#6b1d7a] font-bold">
+            Reset Demo
+          </button>
+          <button id="clearAllDataBtn" type="button" class="px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 font-bold">
+            Clear All
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: INCIDENT SUBMITTED CONFIRMATION POPUP -->
+  <div id="submitSuccessModal" class="hidden fixed inset-0 z-50 bg-[#1a1528]/55 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="buddy-card max-w-sm w-full p-6 text-center space-y-4">
+      <div class="w-16 h-16 rounded-full bg-[#f4effa] border border-[#e6dcf6] mx-auto flex items-center justify-center">
+        <div class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+      </div>
+
+      <div class="space-y-1">
+        <h3 class="text-lg font-extrabold text-[#1a1528]">Incident Submitted!</h3>
+        <p id="submitModalSubtext" class="text-xs font-semibold text-[#787588]">
+          Your incident details have been recorded successfully.
+        </p>
+      </div>
+
+      <div class="lavender-box px-4 py-3 text-xs space-y-1 text-left">
+        <div class="flex justify-between gap-2">
+          <span class="text-[#787588] font-semibold">Incident #:</span>
+          <strong id="submitModalIncidentId" class="font-extrabold text-[#6b1d7a] text-right">—</strong>
+        </div>
+        <div class="flex justify-between gap-2">
+          <span class="text-[#787588] font-semibold">Customer:</span>
+          <strong id="submitModalCustomer" class="font-bold text-[#1a1528] text-right truncate">—</strong>
+        </div>
+        <div class="flex justify-between gap-2">
+          <span class="text-[#787588] font-semibold">Related To:</span>
+          <strong id="submitModalCategory" class="font-bold text-[#1a1528] text-right truncate">—</strong>
+        </div>
+      </div>
+
+      <div class="space-y-2.5 pt-1">
+        <button
+          id="raiseAnotherIncidentBtn"
+          type="button"
+          class="brand-gradient brand-gradient-hover w-full py-3.5 px-4 rounded-2xl text-white text-xs font-bold shadow-md transition flex items-center justify-center gap-2 whitespace-nowrap"
+        >
+          <span>+ Raise New Incident</span>
+        </button>
+        <button
+          id="goToHomeAfterSubmitBtn"
+          type="button"
+          class="w-full py-3 px-4 rounded-2xl bg-[#f4effa] hover:bg-[#e8dcf6] border border-[#e0d0f5] text-[#6b1d7a] text-xs font-extrabold transition"
+        >
+          Go to Homepage
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastBanner" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-50 brand-gradient text-white px-5 py-2.5 rounded-full shadow-lg flex items-center gap-2 text-xs font-bold whitespace-nowrap">
+    <span id="toastDot" class="w-2 h-2 rounded-full bg-white shrink-0"></span>
+    <span id="toastMessage">Saved</span>
+  </div>
+
+  <script>
+    (function () {
+      const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwDT00_HOajETPiRFrRCjXYhJTDAOeYRlbbGLXB_2QRlnRohLaAU-tKdmbwRh1IcZ-3/exec';
+
+      const STORAGE_KEYS = {
+        PROFILE: 'incident_tracker_bdm_profile_v2',
+        INCIDENTS: 'onetouch_portal_incidents_v4',
+        SCRIPT_URL: 'onetouch_portal_script_url_v2',
+        CLUSTER_MAP: 'onetouch_portal_cluster_map_v1'
+      };
+
+      // Initial seed for the Google Sheet 'Cluster Mapping' tab (overridden dynamically whenever synced with Google Sheet)
+      function getInitialSheetClusterMapping() {
+        return [
+          { clusterName: 'Kollam', bdmName: 'Shahid S' },
+          { clusterName: 'Kollam', bdmName: 'Athira S' },
+          { clusterName: 'Kollam', bdmName: 'Sachin S' },
+          { clusterName: 'Kollam', bdmName: 'Parvathy M D' },
+          { clusterName: 'Trivandrum', bdmName: 'Unni S' },
+          { clusterName: 'Trivandrum', bdmName: 'Sona S Raj' },
+          { clusterName: 'Trivandrum', bdmName: 'Vishal Steephen' },
+          { clusterName: 'Trivandrum', bdmName: 'Anakha V' },
+          { clusterName: 'Trivandrum', bdmName: 'Pranav Govind' },
+          { clusterName: 'Kottayam', bdmName: 'Jacob Jherald' },
+          { clusterName: 'Kottayam', bdmName: 'Reshmi Sreekrishnan' },
+          { clusterName: 'Kottayam', bdmName: 'Sambhu K S' },
+          { clusterName: 'Kottayam', bdmName: 'Sidhartha Kanjirakkattu' },
+          { clusterName: 'Kottayam', bdmName: 'Kannan Satheesan' },
+          { clusterName: 'Cochin', bdmName: 'Sivaprasanth B' },
+          { clusterName: 'Cochin', bdmName: 'K S Vyshnav' },
+          { clusterName: 'Cochin', bdmName: 'Arun Nair' },
+          { clusterName: 'Thrissur', bdmName: 'Nidhin P S' }
+        ];
+      }
+
+      const MODULE_CONFIG = {
+        'Renewal': {
+          number: 1,
+          subCategories: [
+            'Renewal Notice',
+            'Renewal Quote',
+            'Renewal Notice and Quote',
+            'Others'
+          ]
+        },
+        'SIMBA': {
+          number: 2,
+          subCategories: [
+            'COL',
+            'Policy Copy Not Generated',
+            'Not able to Renew',
+            'Others'
+          ]
+        },
+        'Policy Document Related': {
+          number: 3,
+          subCategories: [
+            'DOB mismatch',
+            'Member Missing',
+            'Relationship Mismatch',
+            'Marital Status Mismatch',
+            'Others'
+          ]
+        },
+        'Policy Not Reflecting in PR': {
+          number: 4,
+          subCategories: [
+            'Fresh Policy',
+            'Renewal Policy'
+          ]
+        }
+      };
+
+      const MODULE_NAMES = Object.keys(MODULE_CONFIG);
+
+      let state = {
+        profile: {
+          managerName: '',
+          clusterName: '',
+          employeeName: '',
+          loginDate: ''
+        },
+        scriptUrl: DEFAULT_SCRIPT_URL,
+        currentView: 'profileGate',
+        wizard: {
+          step: 1,
+          category: '',
+          subCategory: ''
+        },
+        updateFilter: {
+          search: '',
+          category: 'ALL',
+          ageing: 'ALL',
+          onlyMyManager: true,
+          onlyUnresolved: true
+        },
+        reportFilter: {
+          onlyMyManager: false,
+          step: 1,
+          activeModule: null,
+          activeCluster: 'ALL',
+          activeAgeing: 'ALL',
+          search: '',
+          returnView: 'profileGate'
+        },
+        customReport: {
+          category: 'ALL',
+          cluster: 'ALL',
+          ageing: 'ALL',
+          status: 'Unresolved'
+        },
+        activeModalTicketId: null,
+        activeModalAction: 'remark',
+        clusterMapping: [],
+        incidents: []
+      };
+
+      function safeGetStorage(key) {
+        try {
+          return localStorage.getItem(key);
+        } catch (err) {
+          return null;
+        }
+      }
+
+      function safeSetStorage(key, value) {
+        try {
+          localStorage.setItem(key, value);
+        } catch (err) {}
+      }
+
+      function createSampleIncidents() {
+        return [
+          {
+            incidentNumber: 'INC-2026-1001',
+            incidentDate: '2026-10-18',
+            managerName: 'Shahid S',
+            clusterName: 'Kollam',
+            employeeName: 'Shahid S',
+            category: 'Renewal',
+            subCategory: 'Renewal Notice and Quote',
+            customerName: 'Arunachalam Pillai',
+            policyName: 'Super Health',
+            prevPolicyNumber: 'P/181114/01/2025/008412',
+            policyOrQuoteNumber: '',
+            agentName: '',
+            imdCode: '',
+            premiumAmount: '',
+            remark: 'Customer has not received renewal notice and quote link.',
+            currentRemark: 'Escalated to underwriting team for quote regeneration.',
+            status: 'Unresolved',
+            updatedAt: '2026-10-19 14:20'
+          },
+          {
+            incidentNumber: 'INC-2026-1002',
+            incidentDate: '2026-10-18',
+            managerName: 'Unni S',
+            clusterName: 'Trivandrum',
+            employeeName: 'Unni S',
+            category: 'SIMBA',
+            subCategory: 'Not able to Renew',
+            customerName: 'Meenakshi Sundaram',
+            policyName: 'Health Alpha',
+            prevPolicyNumber: 'P/181114/01/2025/004190',
+            policyOrQuoteNumber: '',
+            agentName: '',
+            imdCode: '',
+            premiumAmount: '',
+            remark: 'SIMBA portal error on previous policy lookup during renewal.',
+            currentRemark: '',
+            status: 'Unresolved',
+            updatedAt: '2026-10-18 11:05'
+          },
+          {
+            incidentNumber: 'INC-2026-1003',
+            incidentDate: '2026-10-19',
+            managerName: 'Jacob Jherald',
+            clusterName: 'Kottayam',
+            employeeName: 'Jacob Jherald',
+            category: 'SIMBA',
+            subCategory: 'Policy Copy Not Generated',
+            customerName: 'Thomas Chacko',
+            policyName: 'Arogya Supreme',
+            prevPolicyNumber: '',
+            policyOrQuoteNumber: 'QT-99201482',
+            agentName: '',
+            imdCode: '',
+            premiumAmount: '',
+            remark: 'Premium debited via COL link but policy copy PDF not generated.',
+            currentRemark: 'Payment receipt synced; awaiting schedule batch.',
+            status: 'Unresolved',
+            updatedAt: '2026-10-19 16:40'
+          },
+          {
+            incidentNumber: 'INC-2026-1004',
+            incidentDate: '2026-10-19',
+            managerName: 'Sivaprasanth B',
+            clusterName: 'Cochin',
+            employeeName: 'Sivaprasanth B',
+            category: 'Policy Document Related',
+            subCategory: 'DOB mismatch',
+            customerName: 'Lakshmi Narayanan',
+            policyName: 'Super Top-Up',
+            prevPolicyNumber: '',
+            policyOrQuoteNumber: 'P/181114/01/2026/012095',
+            agentName: '',
+            imdCode: '',
+            premiumAmount: '',
+            remark: 'Spouse DOB printed as 14/08/1984 instead of 14/08/1986.',
+            currentRemark: 'ID proof uploaded for endorsement.',
+            status: 'Unresolved',
+            updatedAt: '2026-10-20 09:15'
+          },
+          {
+            incidentNumber: 'INC-2026-1005',
+            incidentDate: '2026-10-20',
+            managerName: 'Nidhin P S',
+            clusterName: 'Thrissur',
+            employeeName: 'Nidhin P S',
+            category: 'Policy Not Reflecting in PR',
+            subCategory: 'Fresh Policy',
+            customerName: 'Fathima Beevi',
+            policyName: 'Arogya Sanjeevani',
+            prevPolicyNumber: '',
+            policyOrQuoteNumber: 'P/181114/01/2026/015532',
+            agentName: 'Ramesh Babu',
+            imdCode: 'IMD0048291',
+            premiumAmount: '14850',
+            remark: 'Fresh policy issued yesterday is not reflecting in PR.',
+            currentRemark: '',
+            status: 'Unresolved',
+            updatedAt: '2026-10-20 10:30'
+          },
+          {
+            incidentNumber: 'INC-2026-0994',
+            incidentDate: '2026-10-15',
+            managerName: 'Athira S',
+            clusterName: 'Kollam',
+            employeeName: 'Athira S',
+            category: 'Renewal',
+            subCategory: 'Renewal Quote',
+            customerName: 'Gopalakrishnan V',
+            policyName: 'Arogya Top-Up',
+            prevPolicyNumber: 'P/181114/01/2025/001920',
+            policyOrQuoteNumber: '',
+            agentName: '',
+            imdCode: '',
+            premiumAmount: '',
+            remark: 'NCB discount missing in renewal quote.',
+            currentRemark: 'Revised quote issued with 25% NCB.',
+            status: 'Resolved',
+            updatedAt: '2026-10-17 17:10'
+          },
+          {
+            incidentNumber: 'INC-2026-0998',
+            incidentDate: '2026-10-16',
+            managerName: 'Sona S Raj',
+            clusterName: 'Trivandrum',
+            employeeName: 'Sona S Raj',
+            category: 'Policy Document Related',
+            subCategory: 'Member Missing',
+            customerName: 'Jennifer Dsouza',
+            policyName: 'Cyber Vault',
+            prevPolicyNumber: '',
+            policyOrQuoteNumber: 'P/181114/01/2026/011402',
+            agentName: '',
+            imdCode: '',
+            premiumAmount: '',
+            remark: 'Dependent child name missing from policy schedule.',
+            currentRemark: 'Endorsement schedule generated and shared.',
+            status: 'Resolved',
+            updatedAt: '2026-10-18 15:00'
+          }
+        ];
+      }
+
+      let toastTimer = null;
+      function showToast(message) {
+        const banner = document.getElementById('toastBanner');
+        const msg = document.getElementById('toastMessage');
+        msg.textContent = message;
+        banner.classList.remove('hidden');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          banner.classList.add('hidden');
+        }, 2500);
+      }
+
+      function getFormattedTimestamp() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+      }
+
+      function getTodayDateString() {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      }
+
+      function normalizeDateString(rawVal) {
+        if (!rawVal) return '';
+        const s = String(rawVal).trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+        }
+        return s;
+      }
+
+      function normalizeIncidentRecord(r) {
+        return {
+          incidentNumber: String(r.incidentNumber || '').trim(),
+          incidentDate: normalizeDateString(r.incidentDate),
+          managerName: String(r.managerName || '').trim(),
+          clusterName: String(r.clusterName || '').trim(),
+          employeeName: String(r.employeeName || r.managerName || '').trim(),
+          category: String(r.category || '').trim(),
+          subCategory: String(r.subCategory || '').trim(),
+          customerName: String(r.customerName || '').trim(),
+          policyName: String(r.policyName || '').trim(),
+          prevPolicyNumber: String(r.prevPolicyNumber || '').trim(),
+          policyOrQuoteNumber: String(r.policyOrQuoteNumber || '').trim(),
+          agentName: String(r.agentName || '').trim(),
+          imdCode: String(r.imdCode || '').trim(),
+          premiumAmount: String(r.premiumAmount || '').trim(),
+          remark: String(r.remark || '').trim(),
+          currentRemark: String(r.currentRemark || '').trim(),
+          status: String(r.status || 'Unresolved').trim() || 'Unresolved',
+          updatedAt: String(r.updatedAt || '').trim()
+        };
+      }
+
+      function getTicketAgeDays(incidentDateStr) {
+        const cleanDate = normalizeDateString(incidentDateStr);
+        if (!cleanDate) return 0;
+        const parts = String(cleanDate).split('-');
+        if (parts.length !== 3) return 0;
+        const raised = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        if (isNaN(raised.getTime())) return 0;
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const diffMs = today.getTime() - raised.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        return diffDays < 0 ? 0 : diffDays;
+      }
+
+      function getAgeingBucketKey(days) {
+        if (days <= 1) return '0-1';
+        if (days <= 3) return '2-3';
+        if (days <= 7) return '4-7';
+        return '8+';
+      }
+
+      function getAgeingBucketLabel(days) {
+        if (days <= 1) return '0-1 Days';
+        if (days <= 3) return '2-3 Days';
+        if (days <= 7) return '4-7 Days';
+        return 'Above 7 Days';
+      }
+
+      function formatAgeingText(days) {
+        if (days === 0) return '0 Days (Today)';
+        if (days === 1) return '1 Day';
+        return `${days} Days`;
+      }
+
+      function getAgeingPillClasses(days) {
+        if (days <= 1) {
+          return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+        }
+        if (days <= 3) {
+          return 'bg-amber-50 text-amber-700 border border-amber-200';
+        }
+        return 'bg-rose-50 text-rose-700 border border-rose-200';
+      }
+
+      function saveIncidentsToStorage() {
+        safeSetStorage(STORAGE_KEYS.INCIDENTS, JSON.stringify(state.incidents));
+      }
+
+      function saveClusterMappingToStorage() {
+        safeSetStorage(STORAGE_KEYS.CLUSTER_MAP, JSON.stringify(state.clusterMapping));
+      }
+
+      function getUniqueClustersFromMapping() {
+        const seen = new Set();
+        const list = [];
+        (state.clusterMapping || []).forEach(row => {
+          const c = (row.clusterName || '').trim();
+          if (c && !seen.has(c)) {
+            seen.add(c);
+            list.push(c);
+          }
+        });
+        return list;
+      }
+
+      function getBdmsForCluster(clusterName) {
+        if (!clusterName) return [];
+        const target = clusterName.trim().toLowerCase();
+        const seen = new Set();
+        const list = [];
+        (state.clusterMapping || []).forEach(row => {
+          if ((row.clusterName || '').trim().toLowerCase() === target) {
+            const b = (row.bdmName || '').trim();
+            if (b && !seen.has(b)) {
+              seen.add(b);
+              list.push(b);
+            }
+          }
+        });
+        return list;
+      }
+
+      function renderWelcomeClusterAndBdmDropdowns(selectedCluster, selectedBdm) {
+        const clusterSelect = document.getElementById('inputClusterName');
+        const bdmSelect = document.getElementById('inputManagerName');
+        if (!clusterSelect || !bdmSelect) return;
+
+        const clusters = getUniqueClustersFromMapping();
+        const activeCluster = selectedCluster !== undefined ? selectedCluster : clusterSelect.value;
+
+        clusterSelect.innerHTML = '<option value="">Select Cluster Name</option>';
+        clusters.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          clusterSelect.appendChild(opt);
+        });
+
+        if (activeCluster && clusters.includes(activeCluster)) {
+          clusterSelect.value = activeCluster;
+        } else {
+          clusterSelect.value = '';
+        }
+
+        populateBdmDropdownForCluster(clusterSelect.value, selectedBdm);
+      }
+
+      function populateBdmDropdownForCluster(clusterName, preferredBdm) {
+        const bdmSelect = document.getElementById('inputManagerName');
+        if (!bdmSelect) return;
+
+        if (!clusterName) {
+          bdmSelect.innerHTML = '<option value="">Select Cluster First</option>';
+          bdmSelect.value = '';
+          return;
+        }
+
+        const bdms = getBdmsForCluster(clusterName);
+        bdmSelect.innerHTML = '<option value="">Select BDM Name</option>';
+        bdms.forEach(b => {
+          const opt = document.createElement('option');
+          opt.value = b;
+          opt.textContent = b;
+          bdmSelect.appendChild(opt);
+        });
+
+        if (preferredBdm && bdms.includes(preferredBdm)) {
+          bdmSelect.value = preferredBdm;
+        } else if (bdms.length === 1) {
+          bdmSelect.value = bdms[0];
+        } else {
+          bdmSelect.value = '';
+        }
+      }
+
+      function renderClusterMappingModalTable() {
+        const container = document.getElementById('clusterMappingTableContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (!state.clusterMapping || state.clusterMapping.length === 0) {
+          container.innerHTML = '<div class="p-3 text-center text-[#787588]">No cluster mappings found</div>';
+          return;
+        }
+
+        state.clusterMapping.forEach((item, index) => {
+          const row = document.createElement('div');
+          row.className = 'flex items-center justify-between px-3 py-2 text-xs';
+          row.innerHTML = `
+            <div class="min-w-0 pr-2">
+              <span class="font-extrabold text-[#6b1d7a]">${escapeHtml(item.clusterName)}</span>
+              <span class="text-[#cbb6e2] mx-1">→</span>
+              <span class="font-bold text-[#1a1528]">${escapeHtml(item.bdmName)}</span>
+            </div>
+            <button
+              type="button"
+              data-del-map-idx="${index}"
+              class="del-map-row-btn text-rose-600 hover:text-rose-800 font-bold text-[11px] px-1.5 py-0.5 rounded"
+              title="Remove mapping row"
+            >
+              ✕
+            </button>
+          `;
+          container.appendChild(row);
+        });
+
+        container.querySelectorAll('.del-map-row-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const idx = Number(btn.getAttribute('data-del-map-idx'));
+            if (!isNaN(idx)) {
+              state.clusterMapping.splice(idx, 1);
+              saveClusterMappingToStorage();
+              renderClusterMappingModalTable();
+              renderWelcomeClusterAndBdmDropdowns(state.profile.clusterName, state.profile.managerName);
+              renderCustomReportSummary();
+              syncMappingToGoogleSheet();
+            }
+          });
+        });
+      }
+
+      async function syncMappingToGoogleSheet() {
+        if (!state.scriptUrl) return;
+        try {
+          await fetch(state.scriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'syncMapping', clusterMapping: state.clusterMapping })
+          });
+        } catch (err) {}
+      }
+
+      function updateServerBadgeUI() {
+        const dot = document.getElementById('syncStatusDot');
+        const badge = document.getElementById('mappingSourceBadge');
+        if (state.scriptUrl) {
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+          if (badge) badge.textContent = 'Live Google Sheet';
+        } else {
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+          if (badge) badge.textContent = 'Sheet Ready';
+        }
+      }
+
+      async function pushToGoogleSheetServer(action, incidentObj) {
+        if (!state.scriptUrl) return;
+        try {
+          await fetch(state.scriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: action, incident: incidentObj })
+          });
+        } catch (err) {}
+      }
+
+      async function pullFromGoogleSheetServer(showFeedback) {
+        if (!state.scriptUrl) {
+          if (showFeedback) {
+            document.getElementById('serverConfigModal').classList.remove('hidden');
+          }
+          return;
+        }
+        try {
+          if (showFeedback) showToast('Syncing Sheet...');
+          const res = await fetch(state.scriptUrl);
+          const data = await res.json();
+          if (data && Array.isArray(data.clusterMapping) && data.clusterMapping.length > 0) {
+            state.clusterMapping = data.clusterMapping;
+            saveClusterMappingToStorage();
+            renderWelcomeClusterAndBdmDropdowns(state.profile.clusterName, state.profile.managerName);
+            renderClusterMappingModalTable();
+          }
+          if (data && Array.isArray(data.products) && data.products.length > 0) {
+            const prodSelect = document.getElementById('fieldPolicyName');
+            if (prodSelect) {
+              const currentProd = prodSelect.value;
+              prodSelect.innerHTML = '<option value="">Select Product / Policy Name</option>';
+              data.products.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                prodSelect.appendChild(opt);
+              });
+              if (currentProd && data.products.includes(currentProd)) {
+                prodSelect.value = currentProd;
+              }
+            }
+          }
+          if (data && Array.isArray(data.incidents)) {
+            state.incidents = data.incidents
+              .map(normalizeIncidentRecord)
+              .filter(i => i.incidentNumber !== '');
+            saveIncidentsToStorage();
+          }
+          renderAllActiveViews();
+          if (showFeedback) showToast('Google Sheet Synced!');
+        } catch (err) {
+          if (showFeedback) {
+            showToast('Saved Locally');
+          }
+        }
+      }
+
+      function navigateTo(viewName) {
+        // Allow 'profileGate' and 'downloadReport' without login!
+        if (viewName !== 'profileGate' && viewName !== 'downloadReport' && (!state.profile.managerName || !state.profile.clusterName)) {
+          viewName = 'profileGate';
+        }
+        state.currentView = viewName;
+
+        const views = {
+          profileGate: document.getElementById('viewProfileGate'),
+          homepage: document.getElementById('viewHomepage'),
+          incidentDetails: document.getElementById('viewIncidentDetails'),
+          updateStatus: document.getElementById('viewUpdateStatus'),
+          downloadReport: document.getElementById('viewDownloadReport')
+        };
+
+        Object.keys(views).forEach(k => {
+          views[k].classList.toggle('hidden', k !== viewName);
+        });
+
+        const topHeader = document.getElementById('appTopHeader');
+        if (viewName === 'profileGate' || viewName === 'downloadReport') {
+          topHeader.classList.add('hidden');
+        } else {
+          topHeader.classList.remove('hidden');
+          document.getElementById('headerManagerName').textContent = state.profile.managerName;
+          document.getElementById('headerClusterName').textContent = state.profile.clusterName;
+        }
+
+        renderAllActiveViews();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      function renderAllActiveViews() {
+        renderHomepageKPIs();
+        if (state.currentView === 'updateStatus') {
+          renderUpdateStatusList();
+        } else if (state.currentView === 'downloadReport') {
+          renderReportModules();
+        }
+      }
+
+      function renderHomepageKPIs() {
+        document.getElementById('homeWelcomeName').textContent = state.profile.managerName || 'BDM';
+        document.getElementById('homeClusterLabel').textContent = state.profile.clusterName ? `Cluster: ${state.profile.clusterName}` : '—';
+
+        const myIncidents = state.incidents.filter(
+          i => !state.profile.managerName || (i.managerName || '').toLowerCase() === state.profile.managerName.toLowerCase()
+        );
+        const totalAll = myIncidents.length;
+        const unresolvedAll = myIncidents.filter(i => i.status !== 'Resolved').length;
+        const resolvedAll = myIncidents.filter(i => i.status === 'Resolved').length;
+
+        document.getElementById('kpiTotalAll').textContent = totalAll;
+        document.getElementById('kpiUnresolvedAll').textContent = unresolvedAll;
+        document.getElementById('kpiResolvedAll').textContent = resolvedAll;
+      }
+
+      function setWizardStep(stepNum) {
+        state.wizard.step = stepNum;
+        document.getElementById('incidentStep1').classList.toggle('hidden', stepNum !== 1);
+        document.getElementById('incidentStep2').classList.toggle('hidden', stepNum !== 2);
+        document.getElementById('incidentStep3').classList.toggle('hidden', stepNum !== 3);
+
+        const activeCls = 'px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-[#6b1d7a] text-white';
+        const doneCls = 'px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-[#eef5ff] text-[#3882f6]';
+        const idleCls = 'px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap bg-[#f4effa] text-[#787588]';
+
+        document.getElementById('wizStepBadge1').className = stepNum === 1 ? activeCls : doneCls;
+        document.getElementById('wizStepBadge2').className = stepNum === 2 ? activeCls : (stepNum > 2 ? doneCls : idleCls);
+        document.getElementById('wizStepBadge3').className = stepNum === 3 ? activeCls : idleCls;
+      }
+
+      function selectMainCategory(categoryName) {
+        state.wizard.category = categoryName;
+        state.wizard.subCategory = '';
+        document.getElementById('step2CategoryLabel').textContent = categoryName;
+
+        const container = document.getElementById('subCategoryOptionsContainer');
+        container.innerHTML = '';
+
+        const config = MODULE_CONFIG[categoryName];
+        if (!config) return;
+
+        config.subCategories.forEach((sub, idx) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'buddy-row-card w-full p-4 text-left flex items-center justify-between gap-3';
+          btn.innerHTML = `
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="w-8 h-8 rounded-full bg-[#f4effa] text-[#6b1d7a] font-extrabold text-xs flex items-center justify-center shrink-0">${idx + 1}</span>
+              <span class="font-bold text-[#1a1528] text-sm truncate">${sub}</span>
+            </div>
+            <span class="text-[#6b1d7a] font-bold shrink-0">→</span>
+          `;
+          btn.addEventListener('click', () => {
+            selectSubCategory(sub);
+          });
+          container.appendChild(btn);
+        });
+
+        setWizardStep(2);
+      }
+
+      function isRenewalRelatedSelection(cat, subCategoryName) {
+        if (cat === 'Renewal') return true;
+        if (cat === 'SIMBA' && subCategoryName === 'Not able to Renew') return true;
+        if (cat === 'Policy Not Reflecting in PR' && subCategoryName === 'Renewal Policy') return true;
+        return false;
+      }
+
+      function syncEitherPolicyRequiredState() {
+        const cat = state.wizard.category;
+        const sub = state.wizard.subCategory;
+        const inputPrev = document.getElementById('fieldPrevPolicyNumber');
+        const inputPol = document.getElementById('fieldPolicyOrQuoteNumber');
+        if (!inputPrev || !inputPol) return;
+
+        if (isRenewalRelatedSelection(cat, sub) || cat === 'SIMBA') {
+          const hasPrev = inputPrev.value.trim().length > 0;
+          const hasPol = inputPol.value.trim().length > 0;
+          if (hasPrev) {
+            inputPrev.required = false;
+            inputPol.required = false;
+          } else if (hasPol) {
+            inputPrev.required = false;
+            inputPol.required = false;
+          } else {
+            // Neither filled yet: require at least one
+            inputPrev.required = true;
+            inputPol.required = false;
+          }
+        }
+      }
+
+      function selectSubCategory(subCategoryName) {
+        state.wizard.subCategory = subCategoryName;
+        const cat = state.wizard.category;
+
+        document.getElementById('formCategoryPill').textContent = cat;
+        document.getElementById('formSubCategoryPill').textContent = subCategoryName;
+        document.getElementById('formManagerDisplay').textContent = state.profile.managerName;
+        document.getElementById('formClusterDisplay').textContent = state.profile.clusterName;
+
+        const dateInput = document.getElementById('fieldIncidentDate');
+        if (!dateInput.value) dateInput.value = getTodayDateString();
+
+        const eitherNotice = document.getElementById('eitherPolicyNotice');
+        const wrapPrev = document.getElementById('wrapPrevPolicyNumber');
+        const inputPrev = document.getElementById('fieldPrevPolicyNumber');
+        const labelPrev = document.getElementById('labelPrevPolicyNumber');
+
+        const wrapPol = document.getElementById('wrapPolicyOrQuoteNumber');
+        const inputPol = document.getElementById('fieldPolicyOrQuoteNumber');
+        const labelPol = document.getElementById('labelPolicyOrQuoteNumber');
+
+        const wrapPr = document.getElementById('wrapPrExtraFields');
+        const inputAgent = document.getElementById('fieldAgentName');
+        const inputImd = document.getElementById('fieldImdCode');
+        const inputPrem = document.getElementById('fieldPremiumAmount');
+
+        eitherNotice.classList.add('hidden');
+        wrapPrev.classList.add('hidden');
+        inputPrev.required = false;
+
+        wrapPol.classList.add('hidden');
+        inputPol.required = false;
+
+        wrapPr.classList.add('hidden');
+        inputAgent.required = false;
+        inputImd.required = false;
+        inputPrem.required = false;
+
+        labelPrev.textContent = 'PREVIOUS YEAR POLICY NUMBER';
+        inputPrev.placeholder = 'Enter Previous Year Policy Number';
+        labelPol.textContent = 'POLICY NUMBER / QUOTE NUMBER';
+        inputPol.placeholder = 'Enter Policy Number / Quote Number';
+
+        const isRenewalFlow = isRenewalRelatedSelection(cat, subCategoryName);
+
+        if (isRenewalFlow || cat === 'SIMBA') {
+          eitherNotice.classList.remove('hidden');
+          wrapPrev.classList.remove('hidden');
+          wrapPol.classList.remove('hidden');
+          syncEitherPolicyRequiredState();
+        } else {
+          wrapPol.classList.remove('hidden');
+          inputPol.required = true;
+        }
+
+        if (cat === 'Policy Not Reflecting in PR') {
+          wrapPr.classList.remove('hidden');
+          inputAgent.required = true;
+          inputImd.required = true;
+          inputPrem.required = true;
+        }
+
+        setWizardStep(3);
+      }
+
+      function generateIncidentId() {
+        const rand = Math.floor(1000 + Math.random() * 9000);
+        return `INC-2026-${rand}`;
+      }
+
+      function renderAgeingFilterPills(containerId, activeAgeing, activeCat, onSelect) {
+        const wrap = document.getElementById(containerId);
+        if (!wrap) return;
+        wrap.innerHTML = '';
+
+        const buckets = [
+          { key: 'ALL', label: 'All Ageing' },
+          { key: '0-1', label: '0-1 Days' },
+          { key: '2-3', label: '2-3 Days' },
+          { key: '4-7', label: '4-7 Days' },
+          { key: '8+', label: '> 7 Days' }
+        ];
+
+        buckets.forEach(b => {
+          const count = state.incidents.filter(i => {
+            if (i.status === 'Resolved') return false;
+            if (activeCat && activeCat !== 'ALL' && i.category !== activeCat) return false;
+            if (b.key === 'ALL') return true;
+            return getAgeingBucketKey(getTicketAgeDays(i.incidentDate)) === b.key;
+          }).length;
+
+          const isActive = (activeAgeing || 'ALL') === b.key;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = isActive
+            ? 'px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-[#3882f6] text-white shadow-2xs transition'
+            : 'px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#eef5ff] text-[#3882f6] hover:bg-[#dbeafe] border border-[#dbeafe] transition';
+          btn.textContent = `${b.label} (${count})`;
+          btn.addEventListener('click', () => onSelect(b.key));
+          wrap.appendChild(btn);
+        });
+      }
+
+      function renderCategoryFilterPills(containerId, activeCat, onSelect) {
+        const wrap = document.getElementById(containerId);
+        if (!wrap) return;
+        wrap.innerHTML = '';
+
+        const headings = [
+          { key: 'ALL', label: 'All' },
+          { key: 'Renewal', label: 'Renewal' },
+          { key: 'SIMBA', label: 'SIMBA' },
+          { key: 'Policy Document Related', label: 'Policy Document Related' },
+          { key: 'Policy Not Reflecting in PR', label: 'Policy Not Reflecting in PR' }
+        ];
+
+        headings.forEach(h => {
+          const count = state.incidents.filter(i => {
+            if (i.status === 'Resolved') return false;
+            return h.key === 'ALL' ? true : i.category === h.key;
+          }).length;
+
+          const isActive = activeCat === h.key;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = isActive
+            ? 'px-3 py-1.5 rounded-full text-xs font-extrabold bg-[#6b1d7a] text-white shadow-2xs transition'
+            : 'px-3 py-1.5 rounded-full text-xs font-bold bg-[#f4effa] text-[#6b1d7a] hover:bg-[#e8dcf6] border border-[#e6dcf6] transition';
+          btn.textContent = `${h.label} (${count})`;
+          btn.addEventListener('click', () => onSelect(h.key));
+          wrap.appendChild(btn);
+        });
+      }
+
+      function createIncidentTicketCard(item) {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'buddy-row-card w-full p-4 text-left flex flex-col gap-2';
+
+        const bdmDisplay = item.managerName || '—';
+        const clusterDisplay = item.clusterName ? ` (${item.clusterName})` : '';
+        const ageDays = getTicketAgeDays(item.incidentDate);
+        const ageText = formatAgeingText(ageDays);
+        const agePillCls = getAgeingPillClasses(ageDays);
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2 w-full">
+            <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+              <span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-[#f4effa] text-[#6b1d7a] whitespace-nowrap">${escapeHtml(item.incidentNumber)}</span>
+              <span class="text-xs font-semibold text-[#787588] whitespace-nowrap">${escapeHtml(item.incidentDate)}</span>
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold whitespace-nowrap ${agePillCls}">Ageing: ${escapeHtml(ageText)}</span>
+            </div>
+            <span class="brand-gradient px-3 py-1.5 rounded-xl text-white text-xs font-bold shrink-0 whitespace-nowrap">
+              Click to Open →
+            </span>
+          </div>
+
+          <div class="text-base font-extrabold text-[#1a1528] leading-snug">
+            ${escapeHtml(item.customerName)}
+          </div>
+
+          <div class="flex items-center gap-1.5 text-xs font-bold text-[#6b1d7a] bg-[#f4effa] border border-[#e6dcf6] px-2.5 py-1 rounded-xl w-fit max-w-full">
+            <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+            </svg>
+            <span class="truncate">Raised by: ${escapeHtml(bdmDisplay)}${escapeHtml(clusterDisplay)}</span>
+          </div>
+
+          <div class="text-xs font-semibold text-[#787588] leading-snug">
+            Related to: <span class="text-[#1a1528] font-bold">${escapeHtml(item.category)}</span> • <span class="text-[#6b1d7a] font-bold">${escapeHtml(item.subCategory)}</span>
+          </div>
+        `;
+        card.addEventListener('click', () => {
+          openUpdateTicketModal(item.incidentNumber);
+        });
+        return card;
+      }
+
+      function renderUpdateStatusList() {
+        const activeCat = state.updateFilter.category || 'ALL';
+        const activeAge = state.updateFilter.ageing || 'ALL';
+        renderCategoryFilterPills('updateCategoryHeadings', activeCat, (selectedCat) => {
+          state.updateFilter.category = selectedCat;
+          renderUpdateStatusList();
+        });
+        renderAgeingFilterPills('updateAgeingHeadings', activeAge, activeCat, (selectedAge) => {
+          state.updateFilter.ageing = selectedAge;
+          renderUpdateStatusList();
+        });
+
+        const q = state.updateFilter.search.trim().toLowerCase();
+        const filtered = state.incidents.filter(item => {
+          if (item.status === 'Resolved') {
+            return false;
+          }
+          if (activeCat !== 'ALL' && item.category !== activeCat) {
+            return false;
+          }
+          if (activeAge !== 'ALL' && getAgeingBucketKey(getTicketAgeDays(item.incidentDate)) !== activeAge) {
+            return false;
+          }
+          if (q) {
+            return (
+              (item.customerName || '').toLowerCase().includes(q) ||
+              (item.incidentNumber || '').toLowerCase().includes(q) ||
+              (item.managerName || '').toLowerCase().includes(q) ||
+              (item.clusterName || '').toLowerCase().includes(q)
+            );
+          }
+          return true;
+        });
+
+        const container = document.getElementById('updateCardsContainer');
+        const emptyState = document.getElementById('updateEmptyState');
+        container.innerHTML = '';
+
+        if (filtered.length === 0) {
+          emptyState.classList.remove('hidden');
+          return;
+        }
+        emptyState.classList.add('hidden');
+
+        filtered.forEach(item => {
+          container.appendChild(createIncidentTicketCard(item));
+        });
+      }
+
+      function openUpdateTicketModal(incidentNumber) {
+        const ticket = state.incidents.find(i => i.incidentNumber === incidentNumber);
+        if (!ticket) return;
+
+        state.activeModalTicketId = incidentNumber;
+        document.getElementById('modalTicketIdBadge').textContent = ticket.incidentNumber;
+        document.getElementById('modalTicketDate').textContent = ticket.incidentDate || '—';
+        const ageDays = getTicketAgeDays(ticket.incidentDate);
+        document.getElementById('modalTicketAgeing').textContent = `${formatAgeingText(ageDays)} (${getAgeingBucketLabel(ageDays)})`;
+        document.getElementById('modalCustomerName').textContent = ticket.customerName;
+        document.getElementById('modalCategoryInfo').textContent = `${ticket.category} — ${ticket.subCategory}`;
+
+        document.getElementById('modalPolicyInfo').textContent = ticket.policyName || '—';
+
+        const prevRow = document.getElementById('modalPrevPolicyRow');
+        const currRow = document.getElementById('modalCurrPolicyRow');
+        if (ticket.prevPolicyNumber) {
+          prevRow.classList.remove('hidden');
+          document.getElementById('modalPrevPolicyNum').textContent = ticket.prevPolicyNumber;
+        } else {
+          prevRow.classList.add('hidden');
+        }
+        if (ticket.policyOrQuoteNumber) {
+          currRow.classList.remove('hidden');
+          document.getElementById('modalCurrPolicyNum').textContent = ticket.policyOrQuoteNumber;
+        } else {
+          currRow.classList.add('hidden');
+        }
+
+        const prBlock = document.getElementById('modalPrDetailsBlock');
+        if (ticket.category === 'Policy Not Reflecting in PR' || ticket.agentName || ticket.imdCode || ticket.premiumAmount) {
+          prBlock.classList.remove('hidden');
+          document.getElementById('modalAgentName').textContent = ticket.agentName || '—';
+          document.getElementById('modalImdCode').textContent = ticket.imdCode || '—';
+          document.getElementById('modalPremiumAmount').textContent = ticket.premiumAmount ? `₹${ticket.premiumAmount}` : '—';
+        } else {
+          prBlock.classList.add('hidden');
+        }
+
+        document.getElementById('modalManagerInfo').textContent = `${ticket.managerName} • ${ticket.clusterName}`;
+        document.getElementById('modalOriginalRemark').textContent = ticket.remark || '—';
+        document.getElementById('modalExistingCurrentRemark').textContent = ticket.currentRemark || '—';
+
+        document.getElementById('modalCurrentRemarkInput').value = ticket.currentRemark || '';
+        document.getElementById('updateTicketModal').classList.remove('hidden');
+      }
+
+      function saveModalTicketUpdate(markResolved) {
+        const ticket = state.incidents.find(i => i.incidentNumber === state.activeModalTicketId);
+        if (!ticket) return;
+
+        const remarkVal = document.getElementById('modalCurrentRemarkInput').value.trim();
+        if (!markResolved && !remarkVal) {
+          showToast('Please enter a remark');
+          return;
+        }
+
+        if (remarkVal) {
+          ticket.currentRemark = remarkVal;
+        }
+        if (markResolved) {
+          ticket.status = 'Resolved';
+          if (!ticket.currentRemark) {
+            ticket.currentRemark = 'Resolved';
+          }
+        }
+        ticket.updatedAt = getFormattedTimestamp();
+
+        saveIncidentsToStorage();
+        pushToGoogleSheetServer('update', ticket);
+
+        document.getElementById('updateTicketModal').classList.add('hidden');
+        renderAllActiveViews();
+
+        showToast(
+          markResolved
+            ? `${ticket.incidentNumber} Marked Resolved`
+            : `${ticket.incidentNumber} Remark Updated`
+        );
+      }
+
+      function computeModuleStats(incidentsList, categoryName) {
+        const subset = categoryName === 'ALL'
+          ? incidentsList
+          : incidentsList.filter(i => i.category === categoryName);
+        const total = subset.length;
+        const unresolved = subset.filter(i => i.status !== 'Resolved').length;
+        const resolved = subset.filter(i => i.status === 'Resolved').length;
+        return { total, unresolved, resolved };
+      }
+
+      function populateCustomClusterOptions() {
+        const selectEl = document.getElementById('customFilterCluster');
+        if (!selectEl) return;
+        const currentVal = state.customReport.cluster || 'ALL';
+        const clusterSet = new Set();
+        getUniqueClustersFromMapping().forEach(c => clusterSet.add(c));
+        state.incidents.forEach(i => {
+          if (i.clusterName && i.clusterName.trim()) {
+            clusterSet.add(i.clusterName.trim());
+          }
+        });
+        if (state.profile.clusterName && state.profile.clusterName.trim()) {
+          clusterSet.add(state.profile.clusterName.trim());
+        }
+
+        selectEl.innerHTML = '<option value="ALL">All Clusters</option>';
+        Array.from(clusterSet).sort().forEach(clu => {
+          const opt = document.createElement('option');
+          opt.value = clu;
+          opt.textContent = clu;
+          selectEl.appendChild(opt);
+        });
+        if (currentVal !== 'ALL' && clusterSet.has(currentVal)) {
+          selectEl.value = currentVal;
+        } else {
+          selectEl.value = 'ALL';
+          state.customReport.cluster = 'ALL';
+        }
+      }
+
+      function filterIncidentsByCustomCriteria(catKey, clusterKey, ageingKey, statusKey) {
+        return state.incidents.filter(item => {
+          if (catKey && catKey !== 'ALL' && item.category !== catKey) return false;
+          if (clusterKey && clusterKey !== 'ALL' && (item.clusterName || '').toLowerCase() !== clusterKey.toLowerCase()) return false;
+          if (ageingKey && ageingKey !== 'ALL') {
+            const ageDays = getTicketAgeDays(item.incidentDate);
+            if (getAgeingBucketKey(ageDays) !== ageingKey) return false;
+          }
+          if (statusKey && statusKey !== 'ALL') {
+            if (statusKey === 'Unresolved' && item.status === 'Resolved') return false;
+            if (statusKey === 'Resolved' && item.status !== 'Resolved') return false;
+          }
+          return true;
+        });
+      }
+
+      function renderCustomReportSummary() {
+        populateCustomClusterOptions();
+        const cat = state.customReport.category;
+        const clu = state.customReport.cluster;
+        const age = state.customReport.ageing;
+
+        const allMatching = filterIncidentsByCustomCriteria(cat, clu, age, 'ALL');
+        const unresMatching = allMatching.filter(i => i.status !== 'Resolved');
+        const resMatching = allMatching.filter(i => i.status === 'Resolved');
+
+        const totalEl = document.getElementById('customKpiTotal');
+        const unresEl = document.getElementById('customKpiUnresolved');
+        const resEl = document.getElementById('customKpiResolved');
+        if (totalEl) totalEl.textContent = allMatching.length;
+        if (unresEl) unresEl.textContent = unresMatching.length;
+        if (resEl) resEl.textContent = resMatching.length;
+      }
+
+      function setReportStep(stepNum, moduleKey, clusterKey, ageingKey) {
+        state.reportFilter.step = stepNum;
+        if (moduleKey !== undefined) {
+          state.reportFilter.activeModule = moduleKey;
+        }
+        state.reportFilter.activeCluster = clusterKey || 'ALL';
+        state.reportFilter.activeAgeing = ageingKey || 'ALL';
+
+        const isList = stepNum === 2;
+        document.getElementById('reportStep1Container').classList.toggle('hidden', isList);
+        document.getElementById('reportUnresolvedListSection').classList.toggle('hidden', !isList);
+        document.getElementById('reportUnresolvedSearchWrap').classList.toggle('hidden', !isList);
+        const badge = document.getElementById('reportHeaderModuleBadge');
+        const spacer = document.getElementById('reportHeaderSpacer');
+        const titleEl = document.getElementById('reportHeaderTitle');
+
+        if (isList) {
+          const modTitle = (!state.reportFilter.activeModule || state.reportFilter.activeModule === 'ALL')
+            ? 'All Report'
+            : state.reportFilter.activeModule;
+          titleEl.textContent = modTitle;
+          badge.textContent = 'UnResolved';
+          badge.classList.remove('hidden');
+          spacer.classList.add('hidden');
+          renderReportUnresolvedList();
+        } else {
+          titleEl.textContent = 'Download Report';
+          badge.classList.add('hidden');
+          spacer.classList.remove('hidden');
+          renderCustomReportSummary();
+        }
+      }
+
+      function renderReportUnresolvedList() {
+        const modKey = state.reportFilter.activeModule || 'ALL';
+        const cluKey = state.reportFilter.activeCluster || 'ALL';
+        const ageKey = state.reportFilter.activeAgeing || 'ALL';
+
+        renderCategoryFilterPills('reportCategoryHeadings', modKey, (selectedCat) => {
+          state.reportFilter.activeModule = selectedCat;
+          const titleEl = document.getElementById('reportHeaderTitle');
+          if (titleEl) {
+            titleEl.textContent = selectedCat === 'ALL' ? 'All Report' : selectedCat;
+          }
+          renderReportUnresolvedList();
+        });
+        renderAgeingFilterPills('reportAgeingHeadings', ageKey, modKey, (selectedAge) => {
+          state.reportFilter.activeAgeing = selectedAge;
+          renderReportUnresolvedList();
+        });
+
+        const q = (state.reportFilter.search || '').trim().toLowerCase();
+
+        const filtered = state.incidents.filter(item => {
+          if (item.status === 'Resolved') return false;
+          if (modKey !== 'ALL' && item.category !== modKey) return false;
+          if (cluKey !== 'ALL' && (item.clusterName || '').toLowerCase() !== cluKey.toLowerCase()) return false;
+          if (ageKey !== 'ALL' && getAgeingBucketKey(getTicketAgeDays(item.incidentDate)) !== ageKey) return false;
+          if (q) {
+            return (
+              (item.customerName || '').toLowerCase().includes(q) ||
+              (item.incidentNumber || '').toLowerCase().includes(q) ||
+              (item.managerName || '').toLowerCase().includes(q) ||
+              (item.clusterName || '').toLowerCase().includes(q)
+            );
+          }
+          return true;
+        });
+
+        const container = document.getElementById('reportUnresolvedCardsContainer');
+        const emptyState = document.getElementById('reportUnresolvedEmptyState');
+        container.innerHTML = '';
+
+        if (filtered.length === 0) {
+          emptyState.classList.remove('hidden');
+          return;
+        }
+        emptyState.classList.add('hidden');
+
+        filtered.forEach(item => {
+          container.appendChild(createIncidentTicketCard(item));
+        });
+      }
+
+      function renderReportModules() {
+        const grid = document.getElementById('reportModulesGrid');
+        grid.innerHTML = '';
+
+        const cards = [
+          { key: 'ALL', title: 'All Report' },
+          { key: 'Renewal', title: 'Renewal' },
+          { key: 'SIMBA', title: 'SIMBA' },
+          { key: 'Policy Document Related', title: 'Policy Document Related' },
+          { key: 'Policy Not Reflecting in PR', title: 'Policy Not Reflecting in PR' }
+        ];
+
+        cards.forEach(card => {
+          const stats = computeModuleStats(state.incidents, card.key);
+          const isAll = card.key === 'ALL';
+          const div = document.createElement('div');
+          div.className = 'buddy-card p-4 sm:p-5 space-y-3.5';
+
+          div.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="text-base font-extrabold text-[#1a1528] truncate">${escapeHtml(card.title)}</h3>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#f4effa] text-[#6b1d7a] whitespace-nowrap shrink-0">
+                ${isAll ? 'Multi-Sheet Excel' : 'Excel Report'}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div class="rounded-2xl py-2.5 px-2 text-center bg-[#f9f8fc] border border-[#eceaf4]">
+                <div class="text-lg font-extrabold text-[#1a1528] leading-tight">${stats.total}</div>
+                <div class="text-[10px] font-bold text-[#787588] whitespace-nowrap mt-0.5">Total Incident</div>
+              </div>
+              <button
+                type="button"
+                data-unresolved-module="${card.key}"
+                class="open-unresolved-tab-btn rounded-2xl py-2.5 px-2 text-center bg-[#f4effa] hover:bg-[#e8dcf6] active:scale-[0.98] border-2 border-[#d8c2f2] transition cursor-pointer flex flex-col items-center justify-center"
+                title="Click to view Unresolved incidents"
+              >
+                <div class="text-lg font-extrabold text-[#6b1d7a] leading-tight">${stats.unresolved}</div>
+                <div class="text-[10px] font-extrabold text-[#6b1d7a] whitespace-nowrap mt-0.5 underline decoration-[#6b1d7a]/50">UnResolved ↗</div>
+              </button>
+              <div class="rounded-2xl py-2.5 px-2 text-center bg-[#eef5ff] border border-[#dbeafe]">
+                <div class="text-lg font-extrabold text-[#3882f6] leading-tight">${stats.resolved}</div>
+                <div class="text-[10px] font-bold text-[#3882f6] whitespace-nowrap mt-0.5">Resolved</div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              data-dl-module="${card.key}"
+              class="dl-excel-btn brand-gradient brand-gradient-hover w-full py-3 px-4 rounded-xl text-white text-xs font-bold shadow-xs transition flex items-center justify-center gap-2 whitespace-nowrap"
+            >
+              <span>${isAll ? 'Download All Report (.xlsx)' : 'Download Unresolved (.xlsx)'}</span>
+              <span>→</span>
+            </button>
+          `;
+          grid.appendChild(div);
+        });
+
+        grid.querySelectorAll('.open-unresolved-tab-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const mod = btn.getAttribute('data-unresolved-module');
+            state.reportFilter.search = '';
+            const searchEl = document.getElementById('reportUnresolvedSearchInput');
+            const clearBtn = document.getElementById('clearReportUnresolvedSearchBtn');
+            if (searchEl) searchEl.value = '';
+            if (clearBtn) clearBtn.classList.add('hidden');
+            setReportStep(2, mod);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        });
+
+        grid.querySelectorAll('.dl-excel-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const mod = btn.getAttribute('data-dl-module');
+            downloadExcelReport(mod, true);
+          });
+        });
+
+        renderCustomReportSummary();
+        if (state.reportFilter.step === 2) {
+          renderReportUnresolvedList();
+        }
+      }
+
+      function formatRowsForSheet(items, moduleName) {
+        if (!items || items.length === 0) {
+          return [{
+            'Incident Raised Date': '—',
+            'Ageing (Days)': '—',
+            'Ageing Bucket': '—',
+            'Incident Number': 'No incidents',
+            'BDM Name': '—',
+            'Cluster Name': '—',
+            'Incident Related To (Module)': moduleName,
+            'Specific Issue (Sub-Category)': '—',
+            'Customer Name': '—',
+            'Product / Policy Name': '—',
+            'Previous Year Policy Number': '—',
+            'Policy Number / Quote Number': '—',
+            'Agent Name': '—',
+            'IMD Code': '—',
+            'Premium Amount': '—',
+            'Remark': '—',
+            'Current Remark': '—',
+            'Status': '—',
+            'Last Updated': '—'
+          }];
+        }
+        return items.map(item => {
+          const ageDays = getTicketAgeDays(item.incidentDate);
+          return {
+            'Incident Raised Date': item.incidentDate || '',
+            'Ageing (Days)': ageDays,
+            'Ageing Bucket': getAgeingBucketLabel(ageDays),
+            'Incident Number': item.incidentNumber || '',
+            'BDM Name': item.managerName || '',
+            'Cluster Name': item.clusterName || '',
+            'Incident Related To (Module)': item.category || '',
+            'Specific Issue (Sub-Category)': item.subCategory || '',
+            'Customer Name': item.customerName || '',
+            'Product / Policy Name': item.policyName || '',
+            'Previous Year Policy Number': item.prevPolicyNumber || '',
+            'Policy Number / Quote Number': item.policyOrQuoteNumber || '',
+            'Agent Name': item.agentName || '',
+            'IMD Code': item.imdCode || '',
+            'Premium Amount': item.premiumAmount || '',
+            'Remark': item.remark || '',
+            'Current Remark': item.currentRemark || '',
+            'Status': item.status || 'Unresolved',
+            'Last Updated': item.updatedAt || ''
+          };
+        });
+      }
+
+      function applySheetColumnWidths(ws) {
+        ws['!cols'] = [
+          { wch: 18 },
+          { wch: 14 },
+          { wch: 16 },
+          { wch: 16 },
+          { wch: 18 },
+          { wch: 18 },
+          { wch: 26 },
+          { wch: 26 },
+          { wch: 22 },
+          { wch: 24 },
+          { wch: 26 },
+          { wch: 26 },
+          { wch: 20 },
+          { wch: 16 },
+          { wch: 16 },
+          { wch: 36 },
+          { wch: 36 },
+          { wch: 14 },
+          { wch: 18 }
+        ];
+      }
+
+      function downloadCustomExcelReport() {
+        if (typeof XLSX === 'undefined') {
+          showToast('Excel loading...');
+          return;
+        }
+
+        const cat = state.customReport.category;
+        const clu = state.customReport.cluster;
+        const age = state.customReport.ageing;
+        const st = state.customReport.status;
+
+        const matching = filterIncidentsByCustomCriteria(cat, clu, age, st);
+        const wb = XLSX.utils.book_new();
+        const dateStamp = getTodayDateString();
+
+        // Sheet 1: Filtered Incidents Detail
+        const modLabel = cat === 'ALL' ? 'All Categories' : cat;
+        const wsMain = XLSX.utils.json_to_sheet(formatRowsForSheet(matching, modLabel));
+        applySheetColumnWidths(wsMain);
+        XLSX.utils.book_append_sheet(wb, wsMain, 'Custom Report');
+
+        // Sheet 2: Ageing Wise Summary
+        const ageingBuckets = [
+          { key: '0-1', label: '0 - 1 Days (Fresh)' },
+          { key: '2-3', label: '2 - 3 Days' },
+          { key: '4-7', label: '4 - 7 Days' },
+          { key: '8+', label: 'Above 7 Days (> 7 Days)' }
+        ];
+        const ageingSummaryRows = ageingBuckets.map(b => {
+          const rows = matching.filter(i => getAgeingBucketKey(getTicketAgeDays(i.incidentDate)) === b.key);
+          return {
+            'Ageing Bucket': b.label,
+            'Total Incidents': rows.length,
+            'UnResolved': rows.filter(i => i.status !== 'Resolved').length,
+            'Resolved': rows.filter(i => i.status === 'Resolved').length
+          };
+        });
+        const wsAgeing = XLSX.utils.json_to_sheet(ageingSummaryRows);
+        wsAgeing['!cols'] = [{ wch: 26 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
+        XLSX.utils.book_append_sheet(wb, wsAgeing, 'Ageing Wise Summary');
+
+        // Sheet 3: Cluster Wise Summary
+        const clusters = Array.from(new Set(matching.map(i => i.clusterName || 'Unspecified'))).sort();
+        const clusterSummaryRows = (clusters.length ? clusters : ['No Data']).map(cName => {
+          const rows = matching.filter(i => (i.clusterName || 'Unspecified') === cName);
+          return {
+            'Cluster Name': cName,
+            'Total Incidents': rows.length,
+            'UnResolved': rows.filter(i => i.status !== 'Resolved').length,
+            'Resolved': rows.filter(i => i.status === 'Resolved').length
+          };
+        });
+        const wsCluster = XLSX.utils.json_to_sheet(clusterSummaryRows);
+        wsCluster['!cols'] = [{ wch: 24 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
+        XLSX.utils.book_append_sheet(wb, wsCluster, 'Cluster Wise Summary');
+
+        // Sheet 4: Category Wise Summary
+        const categorySummaryRows = MODULE_NAMES.map(mName => {
+          const rows = matching.filter(i => i.category === mName);
+          return {
+            'Category (Module)': mName,
+            'Total Incidents': rows.length,
+            'UnResolved': rows.filter(i => i.status !== 'Resolved').length,
+            'Resolved': rows.filter(i => i.status === 'Resolved').length
+          };
+        });
+        const wsCat = XLSX.utils.json_to_sheet(categorySummaryRows);
+        wsCat['!cols'] = [{ wch: 30 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
+        XLSX.utils.book_append_sheet(wb, wsCat, 'Category Wise Summary');
+
+        const prefixPart = cat === 'ALL' ? 'IT' : (cat === 'Policy Document Related' ? 'Policy Document' : cat);
+        const statusPart = st === 'Resolved' ? 'Resolved' : (st === 'ALL' ? 'All Status' : 'Pending');
+        const circleOrClusterPart = clu === 'ALL' ? 'Kerala Circle' : `${clu} Cluster`;
+        const ageingSuffix = age === 'ALL' ? '' : `_${age === '8+' ? 'Above 7 Days' : age + ' Days'}`;
+
+        const fileName = `${prefixPart} ${statusPart}_${circleOrClusterPart}${ageingSuffix}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+        showToast(`Downloaded ${fileName}`);
+      }
+
+      function getReadableModuleReportFileName(moduleKey) {
+        if (moduleKey === 'ALL') {
+          return 'IT Pending_Kerala Circle.xlsx';
+        }
+        const readableMap = {
+          'Renewal': 'Renewal Pending_Kerala Circle.xlsx',
+          'SIMBA': 'SIMBA Pending_Kerala Circle.xlsx',
+          'Policy Document Related': 'Policy Document Pending_Kerala Circle.xlsx',
+          'Policy Not Reflecting in PR': 'Policy Not Reflecting in PR Pending_Kerala Circle.xlsx'
+        };
+        return readableMap[moduleKey] || `${moduleKey} Pending_Kerala Circle.xlsx`;
+      }
+
+      function downloadExcelReport(moduleKey, onlyUnresolved) {
+        if (typeof XLSX === 'undefined') {
+          showToast('Excel loading...');
+          return;
+        }
+
+        const wb = XLSX.utils.book_new();
+
+        if (moduleKey === 'ALL') {
+          MODULE_NAMES.forEach(modName => {
+            const modItems = state.incidents.filter(i => {
+              if (i.category !== modName) return false;
+              if (onlyUnresolved && i.status === 'Resolved') return false;
+              return true;
+            });
+            const ws = XLSX.utils.json_to_sheet(formatRowsForSheet(modItems, modName));
+            applySheetColumnWidths(ws);
+            XLSX.utils.book_append_sheet(wb, ws, modName.slice(0, 31));
+          });
+
+          const fileName = getReadableModuleReportFileName('ALL');
+          XLSX.writeFile(wb, fileName);
+          showToast(`Downloaded ${fileName}`);
+        } else {
+          const modItems = state.incidents.filter(i => {
+            if (i.category !== moduleKey) return false;
+            if (onlyUnresolved && i.status === 'Resolved') return false;
+            return true;
+          });
+          const ws = XLSX.utils.json_to_sheet(formatRowsForSheet(modItems, moduleKey));
+          applySheetColumnWidths(ws);
+          XLSX.utils.book_append_sheet(wb, ws, moduleKey.slice(0, 31));
+
+          const fileName = getReadableModuleReportFileName(moduleKey);
+          XLSX.writeFile(wb, fileName);
+          showToast(`Downloaded ${fileName}`);
+        }
+      }
+
+      function escapeHtml(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function initApp() {
+        const savedUrl = safeGetStorage(STORAGE_KEYS.SCRIPT_URL) || DEFAULT_SCRIPT_URL;
+        state.scriptUrl = savedUrl;
+        document.getElementById('inputScriptUrl').value = savedUrl;
+        safeSetStorage(STORAGE_KEYS.SCRIPT_URL, savedUrl);
+        updateServerBadgeUI();
+
+        const savedMapRaw = safeGetStorage(STORAGE_KEYS.CLUSTER_MAP);
+        if (savedMapRaw) {
+          try {
+            const parsedMap = JSON.parse(savedMapRaw);
+            if (Array.isArray(parsedMap) && parsedMap.length > 0) {
+              state.clusterMapping = parsedMap;
+            }
+          } catch (e) {}
+        }
+        if (!state.clusterMapping || state.clusterMapping.length === 0) {
+          state.clusterMapping = getInitialSheetClusterMapping();
+          saveClusterMappingToStorage();
+        }
+
+        const savedProfileRaw = safeGetStorage(STORAGE_KEYS.PROFILE);
+        if (savedProfileRaw) {
+          try {
+            const parsed = JSON.parse(savedProfileRaw);
+            if (parsed && parsed.managerName && parsed.clusterName) {
+              state.profile = parsed;
+            }
+          } catch (e) {}
+        }
+
+        renderWelcomeClusterAndBdmDropdowns(state.profile.clusterName, state.profile.managerName);
+        renderClusterMappingModalTable();
+
+        document.getElementById('inputClusterName').addEventListener('change', (e) => {
+          populateBdmDropdownForCluster(e.target.value, '');
+        });
+
+        const savedIncidentsRaw = safeGetStorage(STORAGE_KEYS.INCIDENTS);
+        if (savedIncidentsRaw) {
+          try {
+            const parsedInc = JSON.parse(savedIncidentsRaw);
+            if (Array.isArray(parsedInc)) {
+              state.incidents = parsedInc;
+            }
+          } catch (e) {}
+        }
+
+        if ((!state.incidents || state.incidents.length === 0) && !state.scriptUrl) {
+          state.incidents = createSampleIncidents();
+          saveIncidentsToStorage();
+        }
+
+        if (state.scriptUrl) {
+          pullFromGoogleSheetServer(false);
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const mgr = document.getElementById('inputManagerName').value.trim();
+          const clu = document.getElementById('inputClusterName').value.trim();
+
+          if (!mgr || !clu) {
+            showToast('Select Cluster and BDM Name');
+            return;
+          }
+
+          state.profile = {
+            managerName: mgr,
+            clusterName: clu,
+            employeeName: mgr,
+            loginDate: getTodayDateString()
+          };
+          safeSetStorage(STORAGE_KEYS.PROFILE, JSON.stringify(state.profile));
+
+          navigateTo('homepage');
+        });
+
+        document.getElementById('navBrandBtn').addEventListener('click', () => navigateTo('homepage'));
+        document.getElementById('homeSyncBtn').addEventListener('click', () => {
+          renderWelcomeClusterAndBdmDropdowns(state.profile.clusterName, state.profile.managerName);
+          navigateTo('profileGate');
+        });
+
+        function stepBackIncidentWizard() {
+          if (state.wizard.step === 3) {
+            setWizardStep(2);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else if (state.wizard.step === 2) {
+            setWizardStep(1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            navigateTo('homepage');
+          }
+        }
+
+        document.getElementById('openModuleIncidentBtn').addEventListener('click', () => {
+          document.getElementById('fieldIncidentNumber').value = '';
+          setWizardStep(1);
+          navigateTo('incidentDetails');
+        });
+        document.getElementById('openModuleUpdateBtn').addEventListener('click', () => navigateTo('updateStatus'));
+
+        // Download Report opened from Welcome Screen or Homepage
+        document.getElementById('openModuleReportBtn').addEventListener('click', () => {
+          state.reportFilter.returnView = 'profileGate';
+          setReportStep(1, null);
+          navigateTo('downloadReport');
+        });
+        document.getElementById('openHomeReportBtn').addEventListener('click', () => {
+          state.reportFilter.returnView = 'homepage';
+          setReportStep(1, null);
+          navigateTo('downloadReport');
+        });
+
+        ['customFilterCategory', 'customFilterCluster', 'customFilterAgeing', 'customFilterStatus'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.addEventListener('change', () => {
+              state.customReport.category = document.getElementById('customFilterCategory').value;
+              state.customReport.cluster = document.getElementById('customFilterCluster').value;
+              state.customReport.ageing = document.getElementById('customFilterAgeing').value;
+              state.customReport.status = document.getElementById('customFilterStatus').value;
+              renderCustomReportSummary();
+            });
+          }
+        });
+
+        document.getElementById('resetCustomReportFiltersBtn').addEventListener('click', () => {
+          state.customReport = { category: 'ALL', cluster: 'ALL', ageing: 'ALL', status: 'Unresolved' };
+          document.getElementById('customFilterCategory').value = 'ALL';
+          document.getElementById('customFilterCluster').value = 'ALL';
+          document.getElementById('customFilterAgeing').value = 'ALL';
+          document.getElementById('customFilterStatus').value = 'Unresolved';
+          renderCustomReportSummary();
+          showToast('Filters Reset');
+        });
+
+        document.getElementById('openCustomUnresolvedListBtn').addEventListener('click', () => {
+          state.reportFilter.search = '';
+          const searchEl = document.getElementById('reportUnresolvedSearchInput');
+          const clearBtn = document.getElementById('clearReportUnresolvedSearchBtn');
+          if (searchEl) searchEl.value = '';
+          if (clearBtn) clearBtn.classList.add('hidden');
+          setReportStep(
+            2,
+            state.customReport.category || 'ALL',
+            state.customReport.cluster || 'ALL',
+            state.customReport.ageing || 'ALL'
+          );
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        document.getElementById('downloadCustomReportBtn').addEventListener('click', () => {
+          downloadCustomExcelReport();
+        });
+        document.getElementById('reportBackToHomeBtn').addEventListener('click', () => {
+          if (state.reportFilter.step === 2) {
+            setReportStep(1, null);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            const target = (state.reportFilter.returnView === 'homepage' && state.profile.managerName && state.profile.clusterName)
+              ? 'homepage'
+              : 'profileGate';
+            navigateTo(target);
+          }
+        });
+
+        const repSearchInput = document.getElementById('reportUnresolvedSearchInput');
+        const clearRepSearchBtn = document.getElementById('clearReportUnresolvedSearchBtn');
+        repSearchInput.addEventListener('input', () => {
+          state.reportFilter.search = repSearchInput.value;
+          clearRepSearchBtn.classList.toggle('hidden', !repSearchInput.value);
+          renderReportUnresolvedList();
+        });
+        clearRepSearchBtn.addEventListener('click', () => {
+          repSearchInput.value = '';
+          state.reportFilter.search = '';
+          clearRepSearchBtn.classList.add('hidden');
+          renderReportUnresolvedList();
+        });
+
+        document.getElementById('incidentBackToHomeBtn').addEventListener('click', stepBackIncidentWizard);
+        document.querySelectorAll('.main-cat-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            selectMainCategory(btn.getAttribute('data-main-category'));
+          });
+        });
+        document.getElementById('backToStep1Btn').addEventListener('click', () => setWizardStep(1));
+        document.getElementById('backToStep2Btn').addEventListener('click', () => setWizardStep(2));
+        document.getElementById('wizStepBadge1').addEventListener('click', () => {
+          if (state.wizard.step > 1) setWizardStep(1);
+        });
+        document.getElementById('wizStepBadge2').addEventListener('click', () => {
+          if (state.wizard.step === 3) setWizardStep(2);
+        });
+        document.getElementById('generateIncidentNumBtn').addEventListener('click', () => {
+          document.getElementById('fieldIncidentNumber').value = generateIncidentId();
+        });
+        document.getElementById('cancelIncidentFormBtn').addEventListener('click', stepBackIncidentWizard);
+
+        document.getElementById('fieldPrevPolicyNumber').addEventListener('input', syncEitherPolicyRequiredState);
+        document.getElementById('fieldPolicyOrQuoteNumber').addEventListener('input', syncEitherPolicyRequiredState);
+
+        document.getElementById('incidentDetailsForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const prevVal = document.getElementById('fieldPrevPolicyNumber').value.trim();
+          const polOrQuoteVal = document.getElementById('fieldPolicyOrQuoteNumber').value.trim();
+          const cat = state.wizard.category;
+          const sub = state.wizard.subCategory;
+
+          if ((isRenewalRelatedSelection(cat, sub) || cat === 'SIMBA') && !prevVal && !polOrQuoteVal) {
+            showToast('Enter Previous Policy # or Policy / Quote #');
+            return;
+          }
+
+          const newIncident = {
+            incidentDate: document.getElementById('fieldIncidentDate').value,
+            incidentNumber: document.getElementById('fieldIncidentNumber').value.trim(),
+            managerName: state.profile.managerName,
+            clusterName: state.profile.clusterName,
+            employeeName: state.profile.managerName,
+            category: cat,
+            subCategory: sub,
+            customerName: document.getElementById('fieldCustomerName').value.trim(),
+            policyName: document.getElementById('fieldPolicyName').value.trim(),
+            prevPolicyNumber: prevVal,
+            policyOrQuoteNumber: polOrQuoteVal,
+            agentName: document.getElementById('fieldAgentName').value.trim(),
+            imdCode: document.getElementById('fieldImdCode').value.trim(),
+            premiumAmount: document.getElementById('fieldPremiumAmount').value.trim(),
+            remark: document.getElementById('fieldRemark').value.trim(),
+            currentRemark: '',
+            status: 'Unresolved',
+            updatedAt: getFormattedTimestamp()
+          };
+
+          state.incidents.unshift(newIncident);
+          saveIncidentsToStorage();
+          pushToGoogleSheetServer('create', newIncident);
+
+          document.getElementById('fieldIncidentNumber').value = '';
+          document.getElementById('fieldCustomerName').value = '';
+          document.getElementById('fieldPolicyName').value = '';
+          document.getElementById('fieldPrevPolicyNumber').value = '';
+          document.getElementById('fieldPolicyOrQuoteNumber').value = '';
+          document.getElementById('fieldAgentName').value = '';
+          document.getElementById('fieldImdCode').value = '';
+          document.getElementById('fieldPremiumAmount').value = '';
+          document.getElementById('fieldRemark').value = '';
+
+          document.getElementById('submitModalIncidentId').textContent = newIncident.incidentNumber || '—';
+          document.getElementById('submitModalCustomer').textContent = newIncident.customerName || '—';
+          document.getElementById('submitModalCategory').textContent = `${newIncident.category} • ${newIncident.subCategory}`;
+          document.getElementById('submitSuccessModal').classList.remove('hidden');
+          renderHomepageKPIs();
+        });
+
+        document.getElementById('raiseAnotherIncidentBtn').addEventListener('click', () => {
+          document.getElementById('submitSuccessModal').classList.add('hidden');
+          document.getElementById('fieldIncidentNumber').value = '';
+          setWizardStep(1);
+          navigateTo('incidentDetails');
+        });
+
+        document.getElementById('goToHomeAfterSubmitBtn').addEventListener('click', () => {
+          document.getElementById('submitSuccessModal').classList.add('hidden');
+          navigateTo('homepage');
+        });
+
+        document.getElementById('updateBackToHomeBtn').addEventListener('click', () => navigateTo('homepage'));
+
+        const searchInput = document.getElementById('updateSearchInput');
+        const clearSearchBtn = document.getElementById('clearUpdateSearchBtn');
+        searchInput.addEventListener('input', () => {
+          state.updateFilter.search = searchInput.value;
+          clearSearchBtn.classList.toggle('hidden', !searchInput.value);
+          renderUpdateStatusList();
+        });
+        clearSearchBtn.addEventListener('click', () => {
+          searchInput.value = '';
+          state.updateFilter.search = '';
+          clearSearchBtn.classList.add('hidden');
+          renderUpdateStatusList();
+        });
+
+        document.getElementById('closeUpdateModalBtn').addEventListener('click', () => {
+          document.getElementById('updateTicketModal').classList.add('hidden');
+        });
+        document.getElementById('cancelUpdateModalBtn').addEventListener('click', () => {
+          document.getElementById('updateTicketModal').classList.add('hidden');
+        });
+        document.getElementById('confirmUpdateModalBtn').addEventListener('click', () => saveModalTicketUpdate(false));
+        document.getElementById('directResolveModalBtn').addEventListener('click', () => saveModalTicketUpdate(true));
+
+        document.getElementById('openServerModalBtn').addEventListener('click', () => {
+          document.getElementById('serverConfigModal').classList.remove('hidden');
+        });
+        document.getElementById('welcomeServerBtn').addEventListener('click', () => {
+          document.getElementById('serverConfigModal').classList.remove('hidden');
+        });
+        document.getElementById('closeServerModalBtn').addEventListener('click', () => {
+          document.getElementById('serverConfigModal').classList.add('hidden');
+        });
+        document.getElementById('saveScriptUrlBtn').addEventListener('click', () => {
+          const url = document.getElementById('inputScriptUrl').value.trim();
+          state.scriptUrl = url;
+          safeSetStorage(STORAGE_KEYS.SCRIPT_URL, url);
+          updateServerBadgeUI();
+          document.getElementById('serverConfigModal').classList.add('hidden');
+          if (url) {
+            pullFromGoogleSheetServer(true);
+          } else {
+            showToast('Local Mode Active');
+          }
+        });
+
+        document.getElementById('copyAppsScriptBtn').addEventListener('click', () => {
+          const code = document.getElementById('appsScriptCodeBlock').textContent;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(code).then(() => {
+              showToast('Copied Script!');
+            }).catch(() => fallbackCopyText(code));
+          } else {
+            fallbackCopyText(code);
+          }
+        });
+
+        document.getElementById('addMapRowBtn').addEventListener('click', () => {
+          const cluEl = document.getElementById('newMapClusterInput');
+          const bdmEl = document.getElementById('newMapBdmInput');
+          const cluVal = cluEl.value.trim();
+          const bdmVal = bdmEl.value.trim();
+          if (!cluVal || !bdmVal) {
+            showToast('Enter Cluster and Employee Name');
+            return;
+          }
+          state.clusterMapping.push({ clusterName: cluVal, bdmName: bdmVal });
+          saveClusterMappingToStorage();
+          cluEl.value = '';
+          bdmEl.value = '';
+          renderClusterMappingModalTable();
+          renderWelcomeClusterAndBdmDropdowns(
+            document.getElementById('inputClusterName').value || cluVal,
+            document.getElementById('inputManagerName').value || bdmVal
+          );
+          renderCustomReportSummary();
+          syncMappingToGoogleSheet();
+          showToast(`Added ${bdmVal} (${cluVal})`);
+        });
+
+        function downloadMasterGoogleSheetTemplate() {
+          if (typeof XLSX === 'undefined') {
+            showToast('Excel loading...');
+            return;
+          }
+          const wb = XLSX.utils.book_new();
+
+          // Tab 1: Cluster Mapping
+          const mapRows = (state.clusterMapping || getInitialSheetClusterMapping()).map(m => ({
+            'Cluster Name': m.clusterName,
+            'Employee Name': m.bdmName
+          }));
+          const wsMap = XLSX.utils.json_to_sheet(mapRows);
+          wsMap['!cols'] = [{ wch: 22 }, { wch: 28 }];
+          XLSX.utils.book_append_sheet(wb, wsMap, 'Cluster Mapping');
+
+          // Tab 2: Products
+          const productNames = [
+            'Super Health', 'Health Alpha', 'Super Top-Up', 'Arogya Top-Up',
+            'Arogya Supreme', 'Arogya Sanjeevani', 'IPA', 'Cyber Vault'
+          ];
+          const wsProd = XLSX.utils.json_to_sheet(productNames.map(p => ({ 'Product / Policy Name': p })));
+          wsProd['!cols'] = [{ wch: 28 }];
+          XLSX.utils.book_append_sheet(wb, wsProd, 'Products');
+
+          // Helper for Incident Tabs matching exact Code.gs HEADERS
+          function buildIncidentSheetRows(items) {
+            if (!items || items.length === 0) {
+              return [{
+                'Incident Number': '',
+                'Incident Raised Date': '',
+                'BDM Name': '',
+                'Cluster Name': '',
+                'Category': '',
+                'Sub-Category': '',
+                'Customer Name': '',
+                'Product / Policy Name': '',
+                'Previous Year Policy Number': '',
+                'Policy Number / Quote Number': '',
+                'Agent Name': '',
+                'IMD Code': '',
+                'Premium Amount': '',
+                'Remark': '',
+                'Current Remark': '',
+                'Status': '',
+                'Last Updated': ''
+              }];
+            }
+            return items.map(item => ({
+              'Incident Number': item.incidentNumber || '',
+              'Incident Raised Date': item.incidentDate || '',
+              'BDM Name': item.managerName || '',
+              'Cluster Name': item.clusterName || '',
+              'Category': item.category || '',
+              'Sub-Category': item.subCategory || '',
+              'Customer Name': item.customerName || '',
+              'Product / Policy Name': item.policyName || '',
+              'Previous Year Policy Number': item.prevPolicyNumber || '',
+              'Policy Number / Quote Number': item.policyOrQuoteNumber || '',
+              'Agent Name': item.agentName || '',
+              'IMD Code': item.imdCode || '',
+              'Premium Amount': item.premiumAmount || '',
+              'Remark': item.remark || '',
+              'Current Remark': item.currentRemark || '',
+              'Status': item.status || 'Unresolved',
+              'Last Updated': item.updatedAt || ''
+            }));
+          }
+
+          // Tab 3: All Incidents
+          const wsAll = XLSX.utils.json_to_sheet(buildIncidentSheetRows(state.incidents));
+          applySheetColumnWidths(wsAll);
+          XLSX.utils.book_append_sheet(wb, wsAll, 'All Incidents');
+
+          // Tabs 4-7: Individual Module Tabs
+          MODULE_NAMES.forEach(modName => {
+            const modItems = (state.incidents || []).filter(i => i.category === modName);
+            const wsMod = XLSX.utils.json_to_sheet(buildIncidentSheetRows(modItems));
+            applySheetColumnWidths(wsMod);
+            XLSX.utils.book_append_sheet(wb, wsMod, modName.slice(0, 31));
+          });
+
+          XLSX.writeFile(wb, 'Incident Tracker_Kerala Circle.xlsx');
+          showToast('Downloaded Incident Tracker_Kerala Circle.xlsx');
+        }
+
+        document.getElementById('downloadFullSheetTemplateBtn').addEventListener('click', downloadMasterGoogleSheetTemplate);
+
+        document.getElementById('exportClusterSheetBtn').addEventListener('click', () => {
+          if (typeof XLSX === 'undefined') return;
+          const wb = XLSX.utils.book_new();
+          const mapRows = (state.clusterMapping || []).map(m => ({
+            'Cluster Name': m.clusterName,
+            'Employee Name': m.bdmName
+          }));
+          const wsMap = XLSX.utils.json_to_sheet(mapRows);
+          wsMap['!cols'] = [{ wch: 22 }, { wch: 28 }];
+          XLSX.utils.book_append_sheet(wb, wsMap, 'Cluster Mapping');
+          XLSX.writeFile(wb, 'Cluster Mapping_Kerala Circle.xlsx');
+          showToast('Exported Cluster Mapping Sheet');
+        });
+
+        document.getElementById('resetDemoDataBtn').addEventListener('click', () => {
+          state.clusterMapping = getInitialSheetClusterMapping();
+          saveClusterMappingToStorage();
+          renderClusterMappingModalTable();
+          renderWelcomeClusterAndBdmDropdowns(state.profile.clusterName, state.profile.managerName);
+          state.incidents = createSampleIncidents();
+          saveIncidentsToStorage();
+          renderAllActiveViews();
+          document.getElementById('serverConfigModal').classList.add('hidden');
+          showToast('Reset Demo & Mapping Data');
+        });
+
+        document.getElementById('clearAllDataBtn').addEventListener('click', () => {
+          state.incidents = [];
+          saveIncidentsToStorage();
+          renderAllActiveViews();
+          document.getElementById('serverConfigModal').classList.add('hidden');
+          showToast('Cleared Tickets');
+        });
+
+        // Once chosen on a given day, keep the same BDM & Cluster for the entire day and open directly on Homepage;
+        // on the next day, show the Welcome Screen first time with the previous Cluster & BDM auto-populated.
+        const todayStr = getTodayDateString();
+        if (state.profile.managerName && state.profile.clusterName && state.profile.loginDate === todayStr) {
+          navigateTo('homepage');
+        } else {
+          renderWelcomeClusterAndBdmDropdowns(state.profile.clusterName, state.profile.managerName);
+          navigateTo('profileGate');
+        }
+      }
+
+      function fallbackCopyText(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast('Copied Script!');
+        } catch (err) {
+          showToast('Copy manually');
+        }
+        document.body.removeChild(ta);
+      }
+
+      window.addEventListener('DOMContentLoaded', initApp);
+    })();
+  </script>
+</body>
+</html>
